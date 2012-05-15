@@ -17,7 +17,10 @@ File is seekable device.
 struct File
 {
 private:
+  version(Windows)
     HANDLE hFile;
+  version(Posix)
+    private HANDLE hFile = -1;
     size_t* pRefCounter;
 
 public:
@@ -25,6 +28,8 @@ public:
     */
     this(string fname, in char[] mode = "r")
     {
+      version(Windows)
+      {
         int share = FILE_SHARE_READ | FILE_SHARE_WRITE;
         int access = void;
         int createMode = void;
@@ -65,8 +70,29 @@ public:
                 break;
         }
 
-        attach(CreateFileW(std.utf.toUTFz!(const(wchar)*)(fname),
-                           access, share, null, createMode, 0, null));
+        auto h = CreateFileW(std.utf.toUTFz!(const(wchar)*)(fname),
+                             access, share, null, createMode, 0, null);
+      }
+      version(Posix)
+      {
+        int share = octal!666;
+        int access;
+        int createMode;
+        if (mode & FileMode.In)
+            access = O_RDONLY;
+        if (mode & FileMode.Out)
+        {
+            createMode = O_CREAT;   // will create if not present
+            access = O_WRONLY;
+        }
+        if (access == (O_WRONLY | O_RDONLY))
+            access = O_RDWR;
+        if ((mode & FileMode.OutNew) == FileMode.OutNew)
+            access |= O_TRUNC;      // resets file
+        auto h = core.sys.posix.fcntl.open(toUTFz(filename),
+                                           access | createMode, share);
+      }
+        attach(h);
     }
     package this(HANDLE h)
     {
@@ -115,8 +141,17 @@ public:
         {
             if (--(*pRefCounter) == 0)
             {
+              version(Windows)
+              {
                 //delete pRefCounter;   // trivial: delegate management to GC.
-                CloseHandle(cast(HANDLE)hFile);
+                CloseHandle(hFile);
+                hFile = null;
+              }
+              version(Windows)
+              {
+                core.sys.posix.unistd.close(hFile);
+                hFile = -1;
+              }
             }
             //pRefCounter = null;       // trivial: do not need
         }
@@ -135,6 +170,8 @@ public:
     */
     bool pull(ref ubyte[] buf)
     {
+      version(Windows)
+      {
         static import std.stdio;
         debug(File)
             std.stdio.writefln("ReadFile : buf.ptr=%08X, len=%s", cast(uint)buf.ptr, buf.length);
@@ -186,12 +223,35 @@ public:
         //  // for overlapped I/O
         //  eof = (GetLastError() == ERROR_HANDLE_EOF);
         }
+      }
+      version(Posix)
+      {
+        size = core.sys.posix.unistd.read(hFile, buffer, size);
+        if (size >= 0)
+        {
+            buf = buf[size .. $];
+            return (size > 0);
+        }
+        else
+        {
+            switch (errno)
+            {
+                case EAGAIN:
+                    return true;
+                default:
+                    break;
+            }
+            throw new Exception("pull(ref buf[]) error");
+        }
+      }
     }
 
     /**
     */
     bool push(ref const(ubyte)[] buf)
     {
+      version(Windows)
+      {
         DWORD size = void;
         if (GetFileType(hFile) == FILE_TYPE_CHAR)
         {
@@ -218,18 +278,61 @@ public:
         {
             throw new Exception("push error");  //?
         }
+      }
+      version(Posix)
+      {
+        auto size = core.sys.posix.unistd.write(hFile, buffer, size);
+        if (size >= 0)
+        {
+            buf = buf[size .. $];
+            return (size > 0);
+        }
+        else
+        {
+            switch (errno)
+            {
+                case EAGAIN:
+                    return true;
+                case EPIPE:
+                    return false;
+                default:
+                    break;
+            }
+            throw new Exception("push error");  //?
+        }
+      }
     }
 
     bool flush()
     {
+      version(Windows)
+      {
         return FlushFileBuffers(hFile) != FALSE;
+      }
     }
 
     /**
     */
     @property bool seekable()
     {
+      version(Windows)
+      {
         return GetFileType(hFile) != FILE_TYPE_CHAR;
+      }
+      version(Posix)
+      {
+        if (core.sys.posix.unistd.lseek(hFile, 0, SEEK_SET) == -1)
+        {
+            switch (errno)
+            {
+                case ESPIPE:
+                    return false;
+                default:
+                    break;
+            }
+        }
+        return true;
+      }
     }
 
     /**
