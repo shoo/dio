@@ -1,4 +1,4 @@
-module io.socket;
+module dio.socket;
 
 import std.socket;
 import std.typecons : scoped;
@@ -98,8 +98,8 @@ unittest
 
 version(unittest)
 {
-    import io.core;
-    import io.socket;
+    import dio.core;
+    import dio.socket;
     import std.array : array;
 }
 unittest

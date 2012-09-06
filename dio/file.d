@@ -1,9 +1,9 @@
-module io.file;
+module dio.file;
 
-import io.core;
+import dio.core;
 version(Windows)
 {
-    import sys.windows;
+    import dio.sys.windows;
 }
 
 debug
@@ -111,7 +111,7 @@ public:
     /// ditto
     void detach()
     {
-        if (pRefCounter && *pRefCounter > 0)
+        if (pRefCounter)
         {
             if (--(*pRefCounter) == 0)
             {
@@ -275,7 +275,7 @@ unittest
 
     assert(buf.length == 64);
     debug std.stdio.writefln("buf = [%(%02x %)]\n", buf);
-    assert(startsWith(buf, "module io.file;\n"));
+    assert(startsWith(buf, "module dio.file;\n"));
 }
 
 
@@ -310,7 +310,7 @@ struct ArraySource(E)
 
 unittest
 {
-    import io.port;
+    import dio.port;
 
     auto r = ArraySource!char("10\r\ntest\r\n").buffered.ranged;
     long num;

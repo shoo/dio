@@ -3,7 +3,7 @@
  * Written by Kenji Hara(9rnsr)
  * License: Boost License 1.0
  */
-module util.typecons;
+module dio.util.typecons;
 
 import std.traits, std.typecons, std.typetuple;
 import std.functional;
@@ -15,11 +15,11 @@ import std.functional;
 
 import std.traits;
 
-import util.meta;
+import dio.util.meta;
 //import metastrings_expand;
-alias util.meta.allSatisfy allSatisfy;
-alias util.meta.staticMap staticMap;
-alias util.meta.isSame isSame;
+alias dio.util.meta.allSatisfy allSatisfy;
+alias dio.util.meta.staticMap staticMap;
+alias dio.util.meta.isSame isSame;
 
 /*private*/ interface Structural
 {

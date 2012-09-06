@@ -2,7 +2,7 @@
 /**
 core module for new I/O
 */
-module io.core;
+module dio.core;
 
 /**
 Retruns element type of device.
@@ -250,7 +250,7 @@ template Sourced(Dev)
 
 unittest
 {
-    import io.file;
+    import dio.file;
 
     alias typeof(File.init.sourced) InputFile;
     static assert( isSource!InputFile);
@@ -317,7 +317,7 @@ template Sinked(Dev)
 
 unittest
 {
-    import io.file;
+    import dio.file;
 
     alias typeof(File.init.sinked) OutputFile;
     static assert(!isSource!OutputFile);
@@ -550,7 +550,7 @@ template Buffered(Dev)
 
 version(unittest)
 {
-    import io.file;
+    import dio.file;
     import std.algorithm;
 }
 unittest
@@ -686,7 +686,7 @@ template Coerced(E, Dev)
 
 unittest
 {
-    import io.file;
+    import dio.file;
 
     alias typeof(File.init.coerced!char) CharFile;
     static assert(is(DeviceElementType!CharFile == char));
@@ -843,7 +843,7 @@ template Ranged(Dev)
 
 unittest
 {
-    import io.file;
+    import dio.file;
     import std.algorithm;
 
     auto file = File(__FILE__).buffered.coerced!char.ranged;
@@ -953,7 +953,7 @@ template Interfaced(Dev)
 
 unittest
 {
-    import io.file;
+    import dio.file;
     import std.algorithm;
     
     Source!char[] sources;

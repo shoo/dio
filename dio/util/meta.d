@@ -1,7 +1,7 @@
 ﻿/**
     original of this module is by rsinfu (http://gist.github.com/598659)
 */
-module util.meta;
+module dio.util.meta;
 
 private import std.conv : to;
 private import std.string;
@@ -1933,7 +1933,7 @@ private:
     }
 
 public:
-    import util.metastrings_expand;
+    import dio.util.metastrings_expand;
     mixin(mixin(expand!q{
         ${StringOf!(FTI.storageClass)}
         ${StringOf!(FTI.attributes)}

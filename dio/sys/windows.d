@@ -1,7 +1,7 @@
 /**
 Add some symbols not defined in core module.
 */
-module sys.windows;
+module dio.sys.windows;
 
 public import core.sys.windows.windows, std.windows.syserror;
 

@@ -1,26 +1,25 @@
-SRCDIR=src
-SRCS=$(SRCDIR)\io\core.d \
-	$(SRCDIR)\io\file.d \
-	$(SRCDIR)\io\socket.d \
-	$(SRCDIR)\io\port.d \
-	$(SRCDIR)\sys\windows.d \
-	$(SRCDIR)\util\typecons.d \
-	$(SRCDIR)\util\meta.d \
-	$(SRCDIR)\util\metastrings_expand.d
+SRCS=dio\core.d \
+	dio\file.d \
+	dio\socket.d \
+	dio\port.d \
+	dio\sys\windows.d \
+	dio\util\typecons.d \
+	dio\util\meta.d \
+	dio\util\metastrings_expand.d
 
 DFLAGS=-property -w -I$(SRCDIR)
 
 DDOCDIR=html\d
 DOCS=\
-	$(DDOCDIR)\io_core.html \
-	$(DDOCDIR)\io_file.html \
-	$(DDOCDIR)\io_socket.html \
-	$(DDOCDIR)\io_port.html
-DDOC=io.ddoc
+	$(DDOCDIR)\dio_core.html \
+	$(DDOCDIR)\dio_file.html \
+	$(DDOCDIR)\dio_socket.html \
+	$(DDOCDIR)\dio_port.html
+DDOC=dio.ddoc
 DDOCFLAGS=-D -Dd$(DDOCDIR) -c -o- $(DFLAGS)
 
-IOLIB=lib\io.lib
-DEBLIB=lib\io_debug.lib
+IOLIB=lib\dio.lib
+DEBLIB=lib\dio_debug.lib
 
 
 # lib
@@ -28,7 +27,7 @@ DEBLIB=lib\io_debug.lib
 lib: $(IOLIB)
 $(IOLIB): $(SRCS)
 	mkdir lib
-	dmd -lib -of$(IOLIB) $(SRCS)
+	dmd -lib $(DFLAGS) -of$(IOLIB) $(SRCS)
 	#dmd -lib -of$@ $(DFLAGS) -O -release -noboundscheck $(SRCS)
 
 #deblib: $(DEBLIB)
@@ -71,14 +70,14 @@ test\release_bench.exe: test\bench.d
 
 html: makefile $(DOCS) $(SRCS)
 
-$(DDOCDIR)\io_core.html: $(DDOC) io\core.d
-	dmd $(DDOCFLAGS) -Dfio_core.html $(DDOC) io\core.d
+$(DDOCDIR)\dio_core.html: $(DDOC) dio\core.d
+	dmd $(DDOCFLAGS) -Dfdio_core.html $(DDOC) dio\core.d
 
-$(DDOCDIR)\io_file.html: $(DDOC) io\file.d
-	dmd $(DDOCFLAGS) -Dfio_file.html $(DDOC) io\file.d
+$(DDOCDIR)\dio_file.html: $(DDOC) dio\file.d
+	dmd $(DDOCFLAGS) -Dfdio_file.html $(DDOC) dio\file.d
 
-$(DDOCDIR)\io_socket.html: $(DDOC) io\socket.d
-	dmd $(DDOCFLAGS) -Dfio_socket.html $(DDOC) io\socket.d
+$(DDOCDIR)\dio_socket.html: $(DDOC) io\socket.d
+	dmd $(DDOCFLAGS) -Dfdio_socket.html $(DDOC) dio\socket.d
 
-$(DDOCDIR)\io_port.html: $(DDOC) io\port.d
-	dmd $(DDOCFLAGS) -Dfio_port.html $(DDOC) io\port.d
+$(DDOCDIR)\dio_port.html: $(DDOC) io\port.d
+	dmd $(DDOCFLAGS) -Dfdio_port.html $(DDOC) dio\port.d
