@@ -76,8 +76,8 @@ $(DDOCDIR)\dio_core.html: $(DDOC) dio\core.d
 $(DDOCDIR)\dio_file.html: $(DDOC) dio\file.d
 	dmd $(DDOCFLAGS) -Dfdio_file.html $(DDOC) dio\file.d
 
-$(DDOCDIR)\dio_socket.html: $(DDOC) io\socket.d
+$(DDOCDIR)\dio_socket.html: $(DDOC) dio\socket.d
 	dmd $(DDOCFLAGS) -Dfdio_socket.html $(DDOC) dio\socket.d
 
-$(DDOCDIR)\dio_port.html: $(DDOC) io\port.d
+$(DDOCDIR)\dio_port.html: $(DDOC) dio\port.d
 	dmd $(DDOCFLAGS) -Dfdio_port.html $(DDOC) dio\port.d
