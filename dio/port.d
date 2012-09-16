@@ -140,7 +140,7 @@ void writefln(T...)(T args)
 /**
 Input $(D data)s from $(D reader) with specified $(D format).
 */
-uint readf(Reader, Data...)(Reader reader, in char[] format, Data data) if (isInputRange!Reader)
+uint readf(Reader, Data...)(auto ref Reader reader, in char[] format, Data data) if (isInputRange!Reader)
 {
     import std.format;
     return formattedRead(reader, format, data);
@@ -238,6 +238,7 @@ public:
                     if (device.available.length == 0)
                         goto err;
                     c = device.available[0];
+                    device.consume(1);
                     dlen = 0;
                 }
                 else if (c == '\r')
