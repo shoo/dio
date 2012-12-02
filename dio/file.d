@@ -141,32 +141,15 @@ public:
 
         DWORD size = void;
 
-        // Reading console input always returns UTF-16
-        if (GetFileType(hFile) == FILE_TYPE_CHAR)
+        if (ReadFile(hFile, buf.ptr, buf.length, &size, null))
         {
-            if (ReadConsoleW(hFile, buf.ptr, buf.length/2, &size, null))
-            {
-                debug(File)
-                    std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
-                        cast(uint)hFile, buf.length, size, GetLastError());
-                debug(File)
-                    std.stdio.writefln("C buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size*2]);
-                buf = buf[size * 2 .. $];
-                return (size > 0);  // valid on only blocking read
-            }
-        }
-        else
-        {
-            if (ReadFile(hFile, buf.ptr, buf.length, &size, null))
-            {
-                debug(File)
-                    std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
-                        cast(uint)hFile, buf.length, size, GetLastError());
-                debug(File)
-                    std.stdio.writefln("F buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size]);
-                buf = buf[size.. $];
-                return (size > 0);  // valid on only blocking read
-            }
+            debug(File)
+                std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
+                    cast(uint)hFile, buf.length, size, GetLastError());
+            debug(File)
+                std.stdio.writefln("F buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size]);
+            buf = buf[size.. $];
+            return (size > 0);  // valid on only blocking read
         }
 
         {
@@ -193,26 +176,10 @@ public:
     bool push(ref const(ubyte)[] buf)
     {
         DWORD size = void;
-        if (GetFileType(hFile) == FILE_TYPE_CHAR)
+        if (WriteFile(hFile, buf.ptr, buf.length, &size, null))
         {
-            if (WriteConsoleW(hFile, buf.ptr, buf.length/2, &size, null))
-            {
-                debug(File)
-                    std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
-                        cast(uint)hFile, buf.length, size, GetLastError());
-                debug(File)
-                    std.stdio.writefln("C buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size]);
-                buf = buf[size * 2 .. $];
-                return (size > 0);  // valid on only blocking read
-            }
-        }
-        else
-        {
-            if (WriteFile(hFile, buf.ptr, buf.length, &size, null))
-            {
-                buf = buf[size .. $];
-                return true;    // (size == buf.length);
-            }
+            buf = buf[size .. $];
+            return true;    // (size == buf.length);
         }
 
         {

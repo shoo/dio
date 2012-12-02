@@ -3,7 +3,7 @@
 module dio.port;
 
 import dio.core, dio.file;
-import std.range, std.traits;
+import std.range, std.traits, std.typecons;
 
 //import core.stdc.stdio : printf;
 
@@ -24,9 +24,90 @@ File stdin;
 File stdout;    /// ditto
 File stderr;    /// ditto
 
-alias typeof({ return stdin.textPort(); }()) StdInTextPort;
-alias typeof({ return stdout.textPort(); }()) StdOutTextPort;
-alias typeof({ return stderr.textPort(); }()) StdErrTextPort;
+
+private struct StdIo
+{
+    File _io;
+    this(File host)
+    {
+        _io = host;
+    }
+    bool pull(ref ubyte[] buf)
+    {
+        // Reading console input always returns UTF-16
+        if (GetFileType(_io.handle) == FILE_TYPE_CHAR)
+        {
+            DWORD size = void;
+            if (ReadConsoleW(_io.handle, buf.ptr, buf.length/2, &size, null))
+            {
+                debug(File)
+                    std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
+                        cast(uint)_io.handle, buf.length, size, GetLastError());
+                debug(File)
+                    std.stdio.writefln("C buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size*2]);
+                buf = buf[size * 2 .. $];
+                return (size > 0);  // valid on only blocking read
+            }
+        }
+        else
+        {
+            return _io.pull(buf);
+        }
+        {
+            switch (GetLastError())
+            {
+                case ERROR_BROKEN_PIPE:
+                    return false;
+                default:
+                    break;
+            }
+
+            debug(File)
+                std.stdio.writefln("pull ng : hFile=%08X, size=%s, GetLastError()=%s",
+                    cast(uint)hFile, size, GetLastError());
+            throw new Exception("pull(ref buf[]) error");
+
+        //  // for overlapped I/O
+        //  eof = (GetLastError() == ERROR_HANDLE_EOF);
+        }
+    }
+    
+    bool push(ref const(ubyte)[] buf)
+    {
+        if (GetFileType(_io.handle) == FILE_TYPE_CHAR)
+        {
+            DWORD size = void;
+            if (WriteConsoleW(_io.handle, buf.ptr, buf.length/2, &size, null))
+            {
+                debug(File)
+                    std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
+                        cast(uint)_io.handle, buf.length, size, GetLastError());
+                debug(File)
+                    std.stdio.writefln("C buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size]);
+                buf = buf[size * 2 .. $];
+                return (size > 0);  // valid on only blocking read
+            }
+        }
+        else
+        {
+            return _io.push(buf);
+        }
+        {
+            throw new Exception("push error");  //?
+        }
+    }
+    bool opEquals(ref const StdIo rhs) const { return _io.opEquals(rhs._io); }
+    bool opEquals(HANDLE h) const { return _io.opEquals(h); }
+    bool flush() { return _io.flush(); }
+    HANDLE handle() @property { return _io.handle; }
+    ulong seek(long offset, SeekPos whence) { return _io.seek(offset, whence); }
+    bool seekable() @property { return _io.seekable; }
+    //mixin Proxy!_io;
+}
+
+alias typeof({ return StdIo(stdin).textPort(); }()) StdInTextPort;
+alias typeof({ return StdIo(stdout).textPort(); }()) StdOutTextPort;
+alias typeof({ return StdIo(stderr).textPort(); }()) StdErrTextPort;
 
 /**
 */
@@ -43,9 +124,9 @@ static this()
         stderr = File(GetStdHandle(STD_ERROR_HANDLE));
     }
 
-    din  = stdin.textPort();
-    dout = stdout.textPort();
-    derr = stderr.textPort();
+    din  = StdIo(stdin).textPort();
+    dout = StdIo(stdout).textPort();
+    derr = StdIo(stderr).textPort();
 }
 
 
