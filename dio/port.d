@@ -105,6 +105,31 @@ private struct StdIo
     //mixin Proxy!_io;
 }
 
+/**
+Configure text I/O port with following translations:
+$(UL
+$(LI Unicode transcoding. If original device element is ubyte, treats as UTF-8 device.)
+$(LI New-line conversion, replace $(D '\r'), $(D '\n'), $(D '\r\n') to $(D '\n') for input, and vice versa.)
+$(LI Buffering. For output, line buffering is done.)
+)
+*/
+auto textPort(Dev)(Dev device)
+if (isSomeChar!(DeviceElementType!Dev) ||
+    is(DeviceElementType!Dev == ubyte))
+{
+    version(Windows) enum isWindows = true;
+    else             enum isWindows = false;
+    static if (isWindows && is(typeof(device.handle) : HANDLE))
+    {
+        return WindowsTextPort!Dev(device);
+    }
+    else
+    {
+        alias typeof({ return Dev.init.coerced!char.buffered; }()) LowDev;
+        return TextPort!LowDev(device.coerced!char.buffered, false);
+    }
+}
+
 alias typeof({ return StdIo(stdin).textPort(); }()) StdInTextPort;
 alias typeof({ return StdIo(stdout).textPort(); }()) StdOutTextPort;
 alias typeof({ return StdIo(stderr).textPort(); }()) StdErrTextPort;
@@ -238,32 +263,6 @@ Input $(D data)s from $(D io.port.din).
 uint readf(Data...)(in char[] format, Data data)
 {
     return readf(din, format, data);
-}
-
-
-/**
-Configure text I/O port with following translations:
-$(UL
-$(LI Unicode transcoding. If original device element is ubyte, treats as UTF-8 device.)
-$(LI New-line conversion, replace $(D '\r'), $(D '\n'), $(D '\r\n') to $(D '\n') for input, and vice versa.)
-$(LI Buffering. For output, line buffering is done.)
-)
-*/
-auto textPort(Dev)(Dev device)
-if (isSomeChar!(DeviceElementType!Dev) ||
-    is(DeviceElementType!Dev == ubyte))
-{
-    version(Windows) enum isWindows = true;
-    else             enum isWindows = false;
-    static if (isWindows && is(typeof(device.handle) : HANDLE))
-    {
-        return WindowsTextPort!Dev(device);
-    }
-    else
-    {
-        alias typeof({ return Dev.init.coerced!char.buffered; }()) LowDev;
-        return TextPort!LowDev(device.coerced!char.buffered, false);
-    }
 }
 
 /**
