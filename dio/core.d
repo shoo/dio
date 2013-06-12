@@ -35,8 +35,7 @@ template isSource(Dev)
 {
     enum isSource = is(typeof(
     {
-        static if (is(Dev == struct)) Dev* d;
-        else                          Dev  d;
+        Dev d = void;
         alias DeviceElementType!Dev E;
         E[] buf;
         while (d.pull(buf)) {}
@@ -53,8 +52,7 @@ template isSink(Dev)
 {
     enum isSink = is(typeof(
     {
-        static if (is(Dev == struct)) Dev* d;
-        else                          Dev  d;
+        Dev d = void;
         alias DeviceElementType!Dev E;
         const(E)[] buf;
         do {} while (d.push(buf));
@@ -72,8 +70,7 @@ template isBufferedSource(Dev)
 {
     enum isBufferedSource = is(typeof(
     {
-        static if (is(Dev == struct)) Dev* d;
-        else                          Dev  d;
+        Dev d = void;
         alias DeviceElementType!Dev E;
         while (d.fetch())
         {
@@ -92,8 +89,7 @@ template isBufferedSink(Dev)
 {
     enum isBufferedSink = is(typeof(
     {
-        static if (is(Dev == struct)) Dev* d;
-        else                          Dev  d;
+        Dev d = void;
         alias DeviceElementType!Dev E;
         d.writable[0] = E.init;
         d.commit(1);
@@ -116,8 +112,7 @@ Seekable device supports $(D seek) primitive.
 template isSeekable(Dev)
 {
     enum isSeekable = is(typeof({
-        static if (is(Dev == struct)) Dev* d;
-        else                          Dev  d;
+        Dev d = void;
         if (d.seekable)
             d.seek(0, SeekPos.Set);
     }()));
