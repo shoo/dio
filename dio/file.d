@@ -1,9 +1,14 @@
 module dio.file;
 
 import dio.core;
+import std.utf;
 version(Windows)
 {
     import dio.sys.windows;
+}
+else version(Posix)
+{
+    import dio.sys.posix;
 }
 
 debug
@@ -17,6 +22,10 @@ File is seekable device.
 struct File
 {
 private:
+    version(Posix)
+    {
+        alias int HANDLE;
+    }
     HANDLE hFile;
     size_t* pRefCounter;
 
@@ -25,48 +34,86 @@ public:
     */
     this(string fname, in char[] mode = "r")
     {
-        int share = FILE_SHARE_READ | FILE_SHARE_WRITE;
-        int access = void;
-        int createMode = void;
-
-        // fopenにはOPEN_ALWAYSに相当するModeはない？
-        switch (mode)
+        version(Windows)
         {
-            case "r":
-                access = GENERIC_READ;
-                createMode = OPEN_EXISTING;
-                break;
-            case "w":
-                access = GENERIC_WRITE;
-                createMode = CREATE_ALWAYS;
-                break;
-            case "a":
-                assert(0);
+            int share = FILE_SHARE_READ | FILE_SHARE_WRITE;
+            int access = void;
+            int createMode = void;
 
-            case "r+":
-                access = GENERIC_READ | GENERIC_WRITE;
-                createMode = OPEN_EXISTING;
-                break;
-            case "w+":
-                access = GENERIC_READ | GENERIC_WRITE;
-                createMode = CREATE_ALWAYS;
-                break;
+            switch (mode)
+            {
+                case "r":
+                    access = GENERIC_READ;
+                    createMode = OPEN_EXISTING;
+                    break;
+                case "w":
+                    access = GENERIC_WRITE;
+                    createMode = CREATE_ALWAYS;
+                    break;
+                case "a":
+                    assert(0);
+
+                case "r+":
+                    access = GENERIC_READ | GENERIC_WRITE;
+                    createMode = OPEN_EXISTING;
+                    break;
+                case "w+":
+                    access = GENERIC_READ | GENERIC_WRITE;
+                    createMode = CREATE_ALWAYS;
+                    break;
+                case "a+":
+                    assert(0);
+
+                // do not have binary mode(binary access only)
+                //  case "rb":
+                //  case "wb":
+                //  case "ab":
+                //  case "rb+": case "r+b":
+                //  case "wb+": case "w+b":
+                //  case "ab+": case "a+b":
+                default:
+                    break;
+            }
+
+            attach(CreateFileW(std.utf.toUTFz!(const(wchar)*)(fname),
+                               access, share, null, createMode, 0, null));
+        }
+        else version(Posix)
+        {
+            int access = void;
+            // openにはOPEN_ALWAYSに相当するModeはない？
+            switch (mode)
+            {
+                case "r":
+                    access = O_RDONLY;
+                    break;
+                case "w":
+                    // version(Windows) と違い，属性はそのまま
+                    access = O_WRONLY;
+                    break;
+                case "a":
+                    assert(0);
+                case "r+":
+                    access = O_RDWR;
+                    break;
+                case "w+":
+                    access = O_RDWR | O_CREAT;
+                    break;
             case "a+":
                 assert(0);
 
-            // do not have binary mode(binary access only)
-        //  case "rb":
-        //  case "wb":
-        //  case "ab":
-        //  case "rb+": case "r+b":
-        //  case "wb+": case "w+b":
-        //  case "ab+": case "a+b":
+                // do not have binary mode(binary access only)
+            //  case "rb":
+            //  case "wb":
+            //  case "ab":
+            //  case "rb+": case "r+b":
+            //  case "wb+": case "w+b":
+            //  case "ab+": case "a+b":
             default:
                 break;
+            }
+            attach(open(std.utf.toUTFz!(const(char)*)(fname), access));
         }
-
-        attach(CreateFileW(std.utf.toUTFz!(const(wchar)*)(fname),
-                           access, share, null, createMode, 0, null));
     }
     package this(HANDLE h)
     {
@@ -116,7 +163,14 @@ public:
             if (--(*pRefCounter) == 0)
             {
                 //delete pRefCounter;   // trivial: delegate management to GC.
-                CloseHandle(cast(HANDLE)hFile);
+                version(Windows)
+                {
+                    CloseHandle(cast(HANDLE)hFile);
+                }
+                else version(Posix)
+                {
+                    close(hFile);
+                }
             }
             //pRefCounter = null;       // trivial: do not need
         }
@@ -139,35 +193,58 @@ public:
         debug(File)
             std.stdio.writefln("ReadFile : buf.ptr=%08X, len=%s", cast(uint)buf.ptr, buf.length);
 
-        DWORD size = void;
-
-        if (ReadFile(hFile, buf.ptr, buf.length, &size, null))
+        version(Windows)
         {
-            debug(File)
-                std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
-                    cast(uint)hFile, buf.length, size, GetLastError());
-            debug(File)
-                std.stdio.writefln("F buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size]);
-            buf = buf[size.. $];
-            return (size > 0);  // valid on only blocking read
-        }
+            DWORD size = void;
 
-        {
-            switch (GetLastError())
+            if (ReadFile(hFile, buf.ptr, buf.length, &size, null))
             {
+                debug(File)
+                    std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
+                                       cast(uint)hFile, buf.length, size, GetLastError());
+                debug(File)
+                    std.stdio.writefln("F buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size]);
+                buf = buf[size.. $];
+                return (size > 0);  // valid on only blocking read
+            }
+
+            {
+                switch (GetLastError())
+                {
                 case ERROR_BROKEN_PIPE:
                     return false;
                 default:
                     break;
+                }
+
+                debug(File)
+                    std.stdio.writefln("pull ng : hFile=%08X, size=%s, GetLastError()=%s",
+                                       cast(uint)hFile, size, GetLastError());
+                throw new Exception("pull(ref buf[]) error");
+
+                //  // for overlapped I/O
+                //  eof = (GetLastError() == ERROR_HANDLE_EOF);
             }
-
-            debug(File)
-                std.stdio.writefln("pull ng : hFile=%08X, size=%s, GetLastError()=%s",
-                    cast(uint)hFile, size, GetLastError());
-            throw new Exception("pull(ref buf[]) error");
-
-        //  // for overlapped I/O
-        //  eof = (GetLastError() == ERROR_HANDLE_EOF);
+        }
+        else version(Posix)
+        {
+            ssize_t size = void;
+            if ((size = read(hFile, buf.ptr, buf.length)) > 0)
+            {
+                debug(File)
+                    std.stdio.writefln("pull ok : hFile=%s, buf.length=%s, size=%s, errno=%s",
+                                       hFile, buf.length, size, errno);
+                debug(File)
+                    std.stdio.writefln("F buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size]);
+                buf = buf[size.. $];
+                return (size > 0);
+            }
+            {
+                debug(File)
+                    std.stdio.writefln("pull ng : hFile=%s, size=%s, errno=%s",
+                                       hFile, size, errno);
+                throw new Exception("pull(ref buf[]) error");
+            }
         }
     }
 
@@ -175,28 +252,64 @@ public:
     */
     bool push(ref const(ubyte)[] buf)
     {
-        DWORD size = void;
-        if (WriteFile(hFile, buf.ptr, buf.length, &size, null))
+        version(Windows)
         {
-            buf = buf[size .. $];
-            return true;    // (size == buf.length);
-        }
+            DWORD size = void;
+            if (WriteFile(hFile, buf.ptr, buf.length, &size, null))
+            {
+                buf = buf[size .. $];
+                return true;    // (size == buf.length);
+            }
 
+            {
+                throw new Exception("push error");  //?
+            }
+        }
+        else version(Posix)
         {
-            throw new Exception("push error");  //?
+            ssize_t size = void;
+            if ((size = write(hFile, buf.ptr, buf.length)) != -1)
+            {
+                buf = buf[size .. $];
+                return true;
+            }
+
+            {
+                throw new Exception("push error");
+            }
         }
     }
 
     bool flush()
     {
-        return FlushFileBuffers(hFile) != FALSE;
+        version(WriteFile)
+        {
+            return FlushFileBuffers(hFile) != FALSE;
+        }
+        else version(Posix)
+        {
+            return fsync(hFile) != -1;
+        }
     }
 
     /**
     */
     @property bool seekable()
     {
-        return GetFileType(hFile) != FILE_TYPE_CHAR;
+        version(WriteFile)
+        {
+            return GetFileType(hFile) != FILE_TYPE_CHAR;
+        }
+        else version(Posix)
+        {
+            stat_t s = void;
+            if (fstat(hFile, &s) != -1)
+            {
+                return !S_ISCHR(s.st_mode);
+            }
+            // Windows と仕様が違うので注意!
+            throw new Exception("seekable error");
+        }
     }
 
     /**
