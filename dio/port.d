@@ -11,10 +11,6 @@ version(Windows)
 {
     import dio.sys.windows;
 }
-else version(Posix)
-{
-    import dio.sys.posix;
-}
 
 
 private template isNarrowChar(T)
@@ -31,10 +27,6 @@ File stderr;    /// ditto
 
 private struct StdIo
 {
-    version(Posix)
-    {
-        alias int HANDLE;
-    }
     File _io;
     this(File host)
     {
@@ -42,79 +34,66 @@ private struct StdIo
     }
     bool pull(ref ubyte[] buf)
     {
-        version(Windows)
+        // Reading console input always returns UTF-16
+        if (GetFileType(_io.handle) == FILE_TYPE_CHAR)
         {
-            // Reading console input always returns UTF-16
-            if (GetFileType(_io.handle) == FILE_TYPE_CHAR)
+            DWORD size = void;
+            if (ReadConsoleW(_io.handle, buf.ptr, buf.length/2, &size, null))
             {
-                DWORD size = void;
-                if (ReadConsoleW(_io.handle, buf.ptr, buf.length/2, &size, null))
-                {
-                    debug(File)
-                        std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
-                                           cast(uint)_io.handle, buf.length, size, GetLastError());
-                    debug(File)
-                        std.stdio.writefln("C buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size*2]);
-                    buf = buf[size * 2 .. $];
-                    return (size > 0);  // valid on only blocking read
-                }
+                debug(File)
+                    std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
+                        cast(uint)_io.handle, buf.length, size, GetLastError());
+                debug(File)
+                    std.stdio.writefln("C buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size*2]);
+                buf = buf[size * 2 .. $];
+                return (size > 0);  // valid on only blocking read
             }
-            else
+        }
+        else
+        {
+            return _io.pull(buf);
+        }
+        {
+            switch (GetLastError())
             {
-                return _io.pull(buf);
-            }
-            {
-                switch (GetLastError())
-                {
                 case ERROR_BROKEN_PIPE:
                     return false;
                 default:
                     break;
-                }
-
-                debug(File)
-                    std.stdio.writefln("pull ng : hFile=%08X, size=%s, GetLastError()=%s",
-                                       cast(uint)hFile, size, GetLastError());
-                throw new Exception("pull(ref buf[]) error");
-
-                //  // for overlapped I/O
-                //  eof = (GetLastError() == ERROR_HANDLE_EOF);
             }
-        }
-        else version(Posix)
-        {
-            return _io.pull(buf);
+
+            debug(File)
+                std.stdio.writefln("pull ng : hFile=%08X, size=%s, GetLastError()=%s",
+                    cast(uint)hFile, size, GetLastError());
+            throw new Exception("pull(ref buf[]) error");
+
+        //  // for overlapped I/O
+        //  eof = (GetLastError() == ERROR_HANDLE_EOF);
         }
     }
+    
     bool push(ref const(ubyte)[] buf)
     {
-        version(Windows)
+        if (GetFileType(_io.handle) == FILE_TYPE_CHAR)
         {
-            if (GetFileType(_io.handle) == FILE_TYPE_CHAR)
+            DWORD size = void;
+            if (WriteConsoleW(_io.handle, buf.ptr, buf.length/2, &size, null))
             {
-                DWORD size = void;
-                if (WriteConsoleW(_io.handle, buf.ptr, buf.length/2, &size, null))
-                {
-                    debug(File)
-                        std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
-                                           cast(uint)_io.handle, buf.length, size, GetLastError());
-                    debug(File)
-                        std.stdio.writefln("C buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size]);
-                    buf = buf[size * 2 .. $];
-                    return (size > 0);  // valid on only blocking read
-                }
-            }
-            else
-            {
-                return _io.push(buf);
-            }
-            {
-                throw new Exception("push error");  //?
+                debug(File)
+                    std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
+                        cast(uint)_io.handle, buf.length, size, GetLastError());
+                debug(File)
+                    std.stdio.writefln("C buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size]);
+                buf = buf[size * 2 .. $];
+                return (size > 0);  // valid on only blocking read
             }
         }
-        else version(Posix)
+        else
         {
             return _io.push(buf);
+        }
+        {
+            throw new Exception("push error");  //?
         }
     }
     bool opEquals(ref const StdIo rhs) const { return _io.opEquals(rhs._io); }
@@ -143,12 +122,6 @@ shared static this()
         stdin  = File(GetStdHandle(STD_INPUT_HANDLE));
         stdout = File(GetStdHandle(STD_OUTPUT_HANDLE));
         stderr = File(GetStdHandle(STD_ERROR_HANDLE));
-    }
-    else version(Posix)
-    {
-        stdin  = File(STDIN_FILENO);
-        stdout = File(STDOUT_FILENO);
-        stderr = File(STDERR_FILENO);
     }
 
     din  = StdIo(stdin).textPort();
