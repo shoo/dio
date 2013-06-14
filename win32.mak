@@ -68,7 +68,7 @@ test\release_bench.exe: test\bench.d
 
 # ddoc
 
-html: makefile $(DOCS) $(SRCS)
+html: $(DOCS) $(SRCS)
 
 $(DDOCDIR)\dio_core.html: $(DDOC) dio\core.d
 	dmd $(DDOCFLAGS) -Dfdio_core.html $(DDOC) dio\core.d
