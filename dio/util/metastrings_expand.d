@@ -214,12 +214,14 @@ private @trusted
                     if (s.parseEsc()) continue;
                     s.chomp(1);
                 }
-                this = Slice(
+                auto tmp = Slice(
                     current,
                     (current == Kind.METACODE
                         ? save_head[0..$-1] ~ `(text("` ~ s.head[0..$-1] ~ `"))`
                         : save_head[0..$] ~ s.head[0..$]),
                     s.tail);
+                buffer = tmp.buffer;
+                eaten  = tmp.eaten;
 
                 return true;
             }
@@ -240,12 +242,14 @@ private @trusted
                     if (s.parseVar()) continue;
                     s.chomp(1);
                 }
-                this = Slice(
+                auto tmp = Slice(
                     current,
                     (current == Kind.METACODE
                         ? save_head[0..$-1] ~ "(text(`" ~ s.head[0..$-1] ~ "`))"
                         : save_head[0..$-1] ~ "` ~ \"`\" ~ `" ~ s.head[0..$-1] ~ "` ~ \"`\" ~ `"),
                     s.tail);
+                buffer = tmp.buffer;
+                eaten  = tmp.eaten;
                 return true;
             }
             else
@@ -347,7 +351,9 @@ private @trusted
 
                     auto s = Slice(Kind.METACODE, t[1..$]);
                     s.parseCode!`}`();
-                    this = Slice(current, head ~ encloseVar(s.head[0..$-1]), s.tail);
+                    auto tmp = Slice(current, head ~ encloseVar(s.head[0..$-1]), s.tail);
+                    buffer = tmp.buffer;
+                    eaten  = tmp.eaten;
 
                     return true;
                 }
