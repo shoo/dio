@@ -201,7 +201,7 @@ template Sourced(Dev)
 @property auto sourced(Dev)(Dev device)
     if (isSource!Dev && isSink!Dev)
 {
-    struct Sourced
+    static struct Sourced
     {
     private:
         alias DeviceElementType!Dev E;
@@ -279,7 +279,7 @@ template Sinked(Dev)
 @property auto sinked(Dev)(Dev device)
     if (isSource!Dev && isSink!Dev)
 {
-    struct Sinked
+    static struct Sinked
     {
     private:
         alias DeviceElementType!Dev E;
@@ -574,7 +574,7 @@ template Coerced(E, Dev)
     if ((isSource!Dev || isSink!Dev) &&
         is(DeviceElementType!Dev == ubyte))
 {
-    struct Coerced
+    static struct Coerced
     {
     private:
         Dev device;
