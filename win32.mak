@@ -1,4 +1,5 @@
-SRCS=dio\core.d \
+SRCS=dio\package.d \
+	dio\core.d \
 	dio\file.d \
 	dio\socket.d \
 	dio\port.d \
@@ -9,7 +10,7 @@ SRCS=dio\core.d \
 DFLAGS=-property -w -I$(SRCDIR)
 
 DDOCDIR=html\d
-DOCS=\
+DOCS=$(DDOCDIR)\dio.html \
 	$(DDOCDIR)\dio_core.html \
 	$(DDOCDIR)\dio_file.html \
 	$(DDOCDIR)\dio_socket.html \
@@ -80,3 +81,6 @@ $(DDOCDIR)\dio_socket.html: $(DDOC) dio\socket.d
 
 $(DDOCDIR)\dio_port.html: $(DDOC) dio\port.d
 	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio\port.d
+
+$(DDOCDIR)\dio.html: $(DDOC) dio\package.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio\package.d
