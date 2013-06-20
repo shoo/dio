@@ -16,7 +16,7 @@ DOCS=\
 	$(DDOCDIR)\dio_socket.html \
 	$(DDOCDIR)\dio_port.html
 DDOC=dio.ddoc
-DDOCFLAGS=-D -Dd$(DDOCDIR) -c -o- $(DFLAGS)
+DDOCFLAGS=-D -c -o- $(DFLAGS)
 
 IOLIB=lib\dio.lib
 DEBLIB=lib\dio_debug.lib
@@ -68,16 +68,16 @@ test\release_bench.exe: test\bench.d
 
 # ddoc
 
-html: makefile $(DOCS) $(SRCS)
+html: $(DOCS) $(SRCS)
 
 $(DDOCDIR)\dio_core.html: $(DDOC) dio\core.d
-	dmd $(DDOCFLAGS) -Dfdio_core.html $(DDOC) dio\core.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio\core.d
 
 $(DDOCDIR)\dio_file.html: $(DDOC) dio\file.d
-	dmd $(DDOCFLAGS) -Dfdio_file.html $(DDOC) dio\file.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio\file.d
 
 $(DDOCDIR)\dio_socket.html: $(DDOC) dio\socket.d
-	dmd $(DDOCFLAGS) -Dfdio_socket.html $(DDOC) dio\socket.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio\socket.d
 
 $(DDOCDIR)\dio_port.html: $(DDOC) dio\port.d
-	dmd $(DDOCFLAGS) -Dfdio_port.html $(DDOC) dio\port.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio\port.d
