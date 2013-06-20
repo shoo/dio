@@ -2036,7 +2036,7 @@ template DelegateTypeOf(F) if (is(FunctionTypeOf!F == function))
 unittest
 {
     alias void function(int, float) @safe F;
-    static assert(is(DelegateTypeOf!F == void delegate(int, float) @safe));
+    static assert(is(DelegateTypeOf!F : void delegate(int, float) @safe));
 }
 
 
