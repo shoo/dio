@@ -21,12 +21,14 @@ DDOCFLAGS=-D -c -o- $(DFLAGS)
 IOLIB=lib/libdio.a
 DEBLIB=lib/libdio_debug.a
 
+TESTEXE=test/unittest test/pipeinput
+BENCHEXE=test/default_bench test/release_bench
 
 # lib
 
 all: $(IOLIB)
 $(IOLIB): $(SRCS)
-	@[ -d lib ] || mkdir lib
+	mkdir -p lib
 	dmd -lib $(DFLAGS) -of$(IOLIB) $(SRCS)
 
 #deblib: $(DEBLIB)
@@ -36,7 +38,7 @@ $(IOLIB): $(SRCS)
 
 clean:
 	rm -rf lib
-	rm -f test/*.o
+	rm -f test/*.o $(TESTEXE) $(BENCHEXE)
 	rm -f html/d/*.html
 
 
@@ -60,9 +62,9 @@ runbench_opt: $(IOLIB) test/release_bench
 	test/release_bench
 
 test/default_bench: test/bench.d
-	dmd $(DFLAGS) -of$@ test/bench.d $(IOLIB)
-test/release_bench.exe: test/bench.d
-	dmd $(DFLAGS) -O -release -noboundscheck -of$@ test/bench.d $(IOLIB)
+	dmd $(DFLAGS) -of$@ $< $(IOLIB)
+test/release_bench: test/bench.d
+	dmd $(DFLAGS) -O -release -noboundscheck -of$@ $< $(IOLIB)
 
 
 # ddoc
