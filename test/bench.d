@@ -1,4 +1,4 @@
-import io.port, io.file;
+import dio.port, dio.file;
 import std.algorithm, std.range, std.random, std.datetime;
 
 void main()
@@ -28,7 +28,7 @@ auto benchReadCharsFromFile()
     return benchmark!(
         () @trusted
         {
-            import io.port, io.file;
+            import dio.port, dio.file;
             auto f = textPort(File(fname));
             string s;
             foreach (i; 0 .. count)
