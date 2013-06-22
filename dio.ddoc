@@ -133,10 +133,11 @@ NAVIGATION_PHOBOS=
 <div class="navblock">
     <h2>io</h2>
     $(UL
-        $(LI <a href="io_core.html" title="">io.core</a>)
-        $(LI <a href="io_file.html" title="">io.file</a>)
-        $(LI <a href="io_socket.html" title="">io.socket</a>)
-        $(LI <a href="io_port.html" title="">io.port</a>)
+        $(LI <a href="dio.html" title="">dio</a>)
+        $(LI <a href="dio_core.html" title="">dio.core</a>)
+        $(LI <a href="dio_file.html" title="">dio.file</a>)
+        $(LI <a href="dio_socket.html" title="">dio.socket</a>)
+        $(LI <a href="dio_port.html" title="">dio.port</a>)
     )
 </div>
 

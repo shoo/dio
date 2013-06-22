@@ -1,26 +1,25 @@
-SRCDIR=src
-SRCS=$(SRCDIR)\io\core.d \
-	$(SRCDIR)\io\file.d \
-	$(SRCDIR)\io\socket.d \
-	$(SRCDIR)\io\port.d \
-	$(SRCDIR)\sys\windows.d \
-	$(SRCDIR)\util\typecons.d \
-	$(SRCDIR)\util\meta.d \
-	$(SRCDIR)\util\metastrings_expand.d
+SRCS=dio\package.d \
+	dio\core.d \
+	dio\file.d \
+	dio\socket.d \
+	dio\port.d \
+	dio\sys\windows.d \
+	dio\util\meta.d \
+	dio\util\metastrings_expand.d
 
 DFLAGS=-property -w -I$(SRCDIR)
 
 DDOCDIR=html\d
-DOCS=\
-	$(DDOCDIR)\io_core.html \
-	$(DDOCDIR)\io_file.html \
-	$(DDOCDIR)\io_socket.html \
-	$(DDOCDIR)\io_port.html
-DDOC=io.ddoc
-DDOCFLAGS=-D -Dd$(DDOCDIR) -c -o- $(DFLAGS)
+DOCS=$(DDOCDIR)\dio.html \
+	$(DDOCDIR)\dio_core.html \
+	$(DDOCDIR)\dio_file.html \
+	$(DDOCDIR)\dio_socket.html \
+	$(DDOCDIR)\dio_port.html
+DDOC=dio.ddoc
+DDOCFLAGS=-D -c -o- $(DFLAGS)
 
-IOLIB=lib\io.lib
-DEBLIB=lib\io_debug.lib
+IOLIB=lib\dio.lib
+DEBLIB=lib\dio_debug.lib
 
 
 # lib
@@ -28,7 +27,7 @@ DEBLIB=lib\io_debug.lib
 all: $(IOLIB)
 $(IOLIB): $(SRCS)
 	mkdir lib
-	dmd -lib -of$(IOLIB) $(SRCS)
+	dmd -lib $(DFLAGS) -of$(IOLIB) $(SRCS)
 	#dmd -lib -of$@ $(DFLAGS) -O -release -noboundscheck $(SRCS)
 
 #deblib: $(DEBLIB)
@@ -48,8 +47,8 @@ runtest: $(IOLIB) test\unittest.exe test\pipeinput.exe
 	test\unittest.exe
 	test\pipeinput.bat
 
-test\unittest.exe: emptymain.d $(SRCS)
-	dmd $(DFLAGS) -of$@ -unittest emptymain.d $(SRCS)
+test\unittest.exe: $(SRCS)
+	dmd $(DFLAGS) -of$@ -unittest -main $(SRCS)
 test\pipeinput.exe: test\pipeinput.d test\pipeinput.dat test\pipeinput.bat $(IOLIB)
 	dmd $(DFLAGS) -of$@ test\pipeinput.d $(IOLIB)
 
@@ -69,16 +68,19 @@ test\release_bench.exe: test\bench.d
 
 # ddoc
 
-html: makefile $(DOCS) $(SRCS)
+html: $(DOCS) $(SRCS)
 
-$(DDOCDIR)\io_core.html: $(DDOC) io\core.d
-	dmd $(DDOCFLAGS) -Dfio_core.html $(DDOC) io\core.d
+$(DDOCDIR)\dio_core.html: $(DDOC) dio\core.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio\core.d
 
-$(DDOCDIR)\io_file.html: $(DDOC) io\file.d
-	dmd $(DDOCFLAGS) -Dfio_file.html $(DDOC) io\file.d
+$(DDOCDIR)\dio_file.html: $(DDOC) dio\file.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio\file.d
 
-$(DDOCDIR)\io_socket.html: $(DDOC) io\socket.d
-	dmd $(DDOCFLAGS) -Dfio_socket.html $(DDOC) io\socket.d
+$(DDOCDIR)\dio_socket.html: $(DDOC) dio\socket.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio\socket.d
 
-$(DDOCDIR)\io_port.html: $(DDOC) io\port.d
-	dmd $(DDOCFLAGS) -Dfio_port.html $(DDOC) io\port.d
+$(DDOCDIR)\dio_port.html: $(DDOC) dio\port.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio\port.d
+
+$(DDOCDIR)\dio.html: $(DDOC) dio\package.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio\package.d

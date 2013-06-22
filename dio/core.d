@@ -2,7 +2,7 @@
 /**
 core module for new I/O
 */
-module io.core;
+module dio.core;
 
 /**
 Retruns element type of device.
@@ -35,7 +35,7 @@ template isSource(Dev)
 {
     enum isSource = is(typeof(
     {
-        Dev d;
+        Dev d = void;
         alias DeviceElementType!Dev E;
         E[] buf;
         while (d.pull(buf)) {}
@@ -52,7 +52,7 @@ template isSink(Dev)
 {
     enum isSink = is(typeof(
     {
-        Dev d;
+        Dev d = void;
         alias DeviceElementType!Dev E;
         const(E)[] buf;
         do {} while (d.push(buf));
@@ -70,7 +70,7 @@ template isBufferedSource(Dev)
 {
     enum isBufferedSource = is(typeof(
     {
-        Dev d;
+        Dev d = void;
         alias DeviceElementType!Dev E;
         while (d.fetch())
         {
@@ -89,7 +89,7 @@ template isBufferedSink(Dev)
 {
     enum isBufferedSink = is(typeof(
     {
-        Dev d;
+        Dev d = void;
         alias DeviceElementType!Dev E;
         d.writable[0] = E.init;
         d.commit(1);
@@ -112,7 +112,7 @@ Seekable device supports $(D seek) primitive.
 template isSeekable(Dev)
 {
     enum isSeekable = is(typeof({
-        Dev d;
+        Dev d = void;
         if (d.seekable)
             d.seek(0, SeekPos.Set);
     }()));
@@ -201,7 +201,7 @@ template Sourced(Dev)
 @property auto sourced(Dev)(Dev device)
     if (isSource!Dev && isSink!Dev)
 {
-    struct Sourced
+    static struct Sourced
     {
     private:
         alias DeviceElementType!Dev E;
@@ -250,7 +250,7 @@ template Sourced(Dev)
 
 unittest
 {
-    import io.file;
+    import dio.file;
 
     alias typeof(File.init.sourced) InputFile;
     static assert( isSource!InputFile);
@@ -279,7 +279,7 @@ template Sinked(Dev)
 @property auto sinked(Dev)(Dev device)
     if (isSource!Dev && isSink!Dev)
 {
-    struct Sinked
+    static struct Sinked
     {
     private:
         alias DeviceElementType!Dev E;
@@ -317,7 +317,7 @@ template Sinked(Dev)
 
 unittest
 {
-    import io.file;
+    import dio.file;
 
     alias typeof(File.init.sinked) OutputFile;
     static assert(!isSource!OutputFile);
@@ -550,7 +550,7 @@ template Buffered(Dev)
 
 version(unittest)
 {
-    import io.file;
+    import dio.file;
     import std.algorithm;
 }
 unittest
@@ -574,7 +574,7 @@ template Coerced(E, Dev)
     if ((isSource!Dev || isSink!Dev) &&
         is(DeviceElementType!Dev == ubyte))
 {
-    struct Coerced
+    static struct Coerced
     {
     private:
         Dev device;
@@ -686,7 +686,7 @@ template Coerced(E, Dev)
 
 unittest
 {
-    import io.file;
+    import dio.file;
 
     alias typeof(File.init.coerced!char) CharFile;
     static assert(is(DeviceElementType!CharFile == char));
@@ -843,9 +843,132 @@ template Ranged(Dev)
 
 unittest
 {
-    import io.file;
+    import dio.file;
     import std.algorithm;
 
     auto file = File(__FILE__).buffered.coerced!char.ranged;
     assert(startsWith(file, "//io.core module;\n"));
+}
+
+
+private template _DeviceInterfaces(Dev)
+{
+    import std.typetuple;
+    static if (isSource!Dev)
+    {
+        alias TypeTuple!(Source!(DeviceElementType!Dev)) T1;
+    }
+    else
+    {
+        alias TypeTuple!() T1;
+    }
+    static if (isSink!Dev)
+    {
+        alias TypeTuple!(T1, Sink!(DeviceElementType!Dev)) T2;
+    }
+    else
+    {
+        alias T1 T2;
+    }
+    static if (isBufferedSource!Dev)
+    {
+        alias TypeTuple!(T2, BufferedSource!(DeviceElementType!Dev)) T3;
+    }
+    else
+    {
+        alias T2 T3;
+    }
+    static if (isBufferedSink!Dev)
+    {
+        alias TypeTuple!(T3, BufferedSink!(DeviceElementType!Dev)) T4;
+    }
+    else
+    {
+        alias T3 T4;
+    }
+    static if (isSeekable!Dev)
+    {
+        alias TypeTuple!(T4, Seekable) T5;
+    }
+    else
+    {
+        alias T4 T5;
+    }
+    
+    
+    alias T5 _DeviceInterfaces;
+}
+
+
+/**
+Change $(D device) type to interface.
+*/
+template Interfaced(Dev)
+{
+    alias typeof((Dev* d = null){ return (*d).interfaced; }()) Interfaced;
+}
+
+/// ditto
+@property auto interfaced(Dev)(Dev device)
+{
+    alias DeviceElementType!Dev E;
+    static class _DeviceAdapterClass: _DeviceInterfaces!Dev
+    {
+    private:
+        Dev _dev;
+    public:
+        this(Dev dev)
+        {
+            _dev = dev;
+        }
+        
+        static if (isSource!Dev)
+        {
+            bool pull(ref E[] buf) { return _dev.pull(buf); }
+        }
+        static if (isSink!Dev)
+        {
+            bool push(ref const(E)[] buf) { return _dev.push(buf); }
+        }
+        static if (isBufferedSource!Dev)
+        {
+            bool fetch() { return _dev.fetch(); }
+            const const(E)[] available() { return _dev.available(); }
+            void consume(size_t n) { return _dev.consume(n); }
+        }
+        static if (isBufferedSink!Dev)
+        {
+            bool flush() { return _dev.flush(); }
+            E[] writable() { return _dev.writable(); }
+            bool commit(size_t n) { return _dev.commit(n); }
+        }
+        static if (isSeekable!Dev)
+        {
+            @property bool seekable() { return _dev.seekable(); }
+            ulong seek(long offset, SeekPos whence) { return _dev.seek(offset, whence); }
+        }
+    }
+    return new _DeviceAdapterClass(device);
+}
+
+unittest
+{
+    import dio.file;
+    import std.algorithm;
+    
+    Source!char[] sources;
+    sources ~= File(__FILE__).coerced!char.interfaced;
+    sources ~= File(__FILE__).buffered.coerced!char.interfaced;
+    
+    auto buf = "//xx.xxxx module;\n".dup;
+    foreach (src; sources)
+    {
+        auto resume = buf[];
+        while (resume.length)
+        {
+            auto res = src.pull(resume);
+            assert(res);
+        }
+        assert(buf == "//io.core module;\n", buf);
+    }
 }

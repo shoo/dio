@@ -1,7 +1,7 @@
 ﻿/**
     original of this module is by rsinfu (http://gist.github.com/598659)
 */
-module util.meta;
+module dio.util.meta;
 
 private import std.conv : to;
 private import std.string;
@@ -36,7 +36,7 @@ template staticMap(alias map, seq...)
         }
         else
         {
-            alias Sequence!(Instantiate!map.With!(seq[0])) staticMap;
+            alias Sequence!(dio.util.meta.Instantiate!map.With!(seq[0])) staticMap;
         }
     }
     else
@@ -58,7 +58,7 @@ template staticFilter(alias pred, seq...)
 {
     static if (seq.length < 2)
     {
-        static if (seq.length == 1 && Instantiate!pred.With!(seq[0]))
+        static if (seq.length == 1 && dio.util.meta.Instantiate!pred.With!(seq[0]))
         {
             alias seq staticFilter;
         }
@@ -91,7 +91,7 @@ template staticReduce(alias compose, Seed, seq...)
     else
     {
         alias staticReduce!(compose,
-                            Instantiate!compose.With!(Seed, seq[0]),
+                            dio.util.meta.Instantiate!compose.With!(Seed, seq[0]),
                             seq[1 .. $])
               staticReduce;
     }
@@ -107,7 +107,7 @@ template staticReduce(alias compose, alias Seed, seq...)
     else
     {
         alias staticReduce!(compose,
-                            Instantiate!compose.With!(Seed, seq[0]),
+                            dio.util.meta.Instantiate!compose.With!(Seed, seq[0]),
                             seq[1 .. $])
               staticReduce;
     }
@@ -122,13 +122,13 @@ unittest
  */
 template staticRemove(E, seq...)
 {
-    alias staticRemoveIf!(Instantiate!isSame.bindFront!E, seq) staticRemove;
+    alias staticRemoveIf!(dio.util.meta.Instantiate!isSame.bindFront!E, seq) staticRemove;
 }
 
 /// ditto
 template staticRemove(alias E, seq...)
 {
-    alias staticRemoveIf!(Instantiate!isSame.bindFront!E, seq) staticRemove;
+    alias staticRemoveIf!(dio.util.meta.Instantiate!isSame.bindFront!E, seq) staticRemove;
 }
 
 unittest
@@ -159,7 +159,7 @@ private template _staticFindChunk(alias pred, size_t m)
     template index(seq...)
         if (m <= seq.length && seq.length < 2*m)
     {
-        static if (Instantiate!pred.With!(seq[0 .. m]))
+        static if (dio.util.meta.Instantiate!pred.With!(seq[0 .. m]))
         {
             enum index = cast(size_t) 0;
         }
@@ -188,13 +188,13 @@ private template _staticFindChunk(alias pred, size_t m)
  */
 template staticFind(E, seq...)
 {
-    alias staticFindIf!(Instantiate!isSame.bindFront!E, seq) staticFind;
+    alias staticFindIf!(dio.util.meta.Instantiate!isSame.bindFront!E, seq) staticFind;
 }
 
 /// ditto
 template staticFind(alias E, seq...)
 {
-    alias staticFindIf!(Instantiate!isSame.bindFront!E, seq) staticFind;
+    alias staticFindIf!(dio.util.meta.Instantiate!isSame.bindFront!E, seq) staticFind;
 }
 
 unittest
@@ -251,13 +251,13 @@ unittest
  */
 template staticUntil(E, seq...)
 {
-    alias staticUntilIf!(Instantiate!isSame.bindFront!E, seq) staticUntil;
+    alias staticUntilIf!(dio.util.meta.Instantiate!isSame.bindFront!E, seq) staticUntil;
 }
 
 /// ditto
 template staticUntil(alias E, seq...)
 {
-    alias staticUntilIf!(Instantiate!isSame.bindFront!E, seq) staticUntil;
+    alias staticUntilIf!(dio.util.meta.Instantiate!isSame.bindFront!E, seq) staticUntil;
 }
 
 unittest
@@ -280,13 +280,13 @@ unittest
  */
 template staticCount(E, seq...)
 {
-    alias staticCountIf!(Instantiate!isSame.bindFront!E, seq) staticCount;
+    alias staticCountIf!(dio.util.meta.Instantiate!isSame.bindFront!E, seq) staticCount;
 }
 
 /// ditto
 template staticCount(alias E, seq...)
 {
-    alias staticCountIf!(Instantiate!isSame.bindFront!E, seq) staticCount;
+    alias staticCountIf!(dio.util.meta.Instantiate!isSame.bindFront!E, seq) staticCount;
 }
 
 unittest
@@ -299,7 +299,7 @@ template staticCountIf(alias pred, seq...)
 {
     static if (seq.length <= 1)
     {
-        static if (seq.length == 0 || !Instantiate!pred.With!(seq[0]))
+        static if (seq.length == 0 || !dio.util.meta.Instantiate!pred.With!(seq[0]))
         {
             enum size_t staticCountIf = 0;
         }
@@ -375,7 +375,7 @@ template staticMost(alias comp, seq...)
 {
     static if (seq.length <= 2)
     {
-        static if (seq.length == 1 || !Instantiate!comp.With!(seq[1], seq[0]))
+        static if (seq.length == 1 || !dio.util.meta.Instantiate!comp.With!(seq[1], seq[0]))
         {
             alias Identity!(seq[0]) staticMost;
         }
@@ -423,7 +423,7 @@ template staticSort(alias comp, seq...)
 
             template With(B...)
             {
-                static if (Instantiate!comp.With!(B[0], A[0]))
+                static if (dio.util.meta.Instantiate!comp.With!(B[0], A[0]))
                 {
                     alias Sequence!(B[0], Merge!(A        )
                                           .With!(B[1 .. $])) With;
@@ -450,7 +450,7 @@ template isStaticSorted(alias comp, seq...)
     }
     else
     {
-        static if (Instantiate!comp.With!(seq[$/2], seq[$/2 - 1]))
+        static if (dio.util.meta.Instantiate!comp.With!(seq[$/2], seq[$/2 - 1]))
         {
             enum isStaticSorted = false;
         }
@@ -493,12 +493,12 @@ template staticUniqSort(alias comp, seq...)
 
             template With(B...)
             {
-                static if (Instantiate!comp.With!(A[0], B[0]))
+                static if (dio.util.meta.Instantiate!comp.With!(A[0], B[0]))
                 {
                     alias Sequence!(A[0], Merge!(A[1 .. $])
                                           .With!(B[0 .. $])) With;
                 }
-                else static if (Instantiate!comp.With!(B[0], A[0]))
+                else static if (dio.util.meta.Instantiate!comp.With!(B[0], A[0]))
                 {
                     alias Sequence!(B[0], Merge!(A[0 .. $])
                                           .With!(B[1 .. $])) With;
@@ -525,7 +525,7 @@ template isStaticUniqSorted(alias comp, seq...)
     }
     else
     {
-        static if (Instantiate!comp.With!(seq[$/2 - 1], seq[$/2]))
+        static if (dio.util.meta.Instantiate!comp.With!(seq[$/2 - 1], seq[$/2]))
         {
             enum isStaticUniqSorted =
                     isStaticUniqSorted!(comp, seq[ 0  .. $/2]) &&
@@ -1236,7 +1236,7 @@ private template Instantiator(args...)
 {
     template Instantiator(alias templat)
     {
-        alias Instantiate!templat.With!args Instantiator;
+        alias dio.util.meta.Instantiate!templat.With!args Instantiator;
     }
 }
 
@@ -1247,7 +1247,7 @@ template templateNot(alias pred)
 {
     template templateNot(args...)
     {
-        enum templateNot = !Instantiate!pred.With!args;
+        enum templateNot = !dio.util.meta.Instantiate!pred.With!args;
     }
 }
 
@@ -1289,12 +1289,12 @@ template templateCompose(templates...)
     {
         static if (templates.length == 1)
         {
-            alias Instantiate!(templates[0]).With!args templateCompose;
+            alias dio.util.meta.Instantiate!(templates[0]).With!args templateCompose;
         }
         else
         {
-            alias Instantiate!(templates[0])
-                        .With!(Instantiate!(.templateCompose!(templates[1 .. $]))
+            alias dio.util.meta.Instantiate!(templates[0])
+                        .With!(dio.util.meta.Instantiate!(.templateCompose!(templates[1 .. $]))
                                      .With!args)
                   templateCompose;
         }
@@ -1555,14 +1555,14 @@ version(unittest)
     template TestTemplate(T...)
     {
     }
-    static assert(isInstantiatedWith!(TestTemplate!int, TestTemplate));
+    static assert(isdio.util.meta.InstantiatedWith!(TestTemplate!int, TestTemplate));
 
 
     struct TestType(T...)
     {
     }
 //  pragma(msg, is(typeof(TestType!int)));
-//  static assert(isInstantiatedWith!(TestType!int, TestType));
+//  static assert(isdio.util.meta.InstantiatedWith!(TestType!int, TestType));
 }
 }
 
@@ -1906,15 +1906,15 @@ template DeclareFunction(F, string name, string code)
 private:
     alias FunctionTypeInfo!F FTI;
     alias staticMap!(
-        Instantiate!q{ a.at!0 ~ a.at!1 ~ " a" ~ to!string(a.at!2) }.With,
+        dio.util.meta.Instantiate!q{ a.at!0 ~ a.at!1 ~ " a" ~ to!string(a.at!2) }.With,
         staticZip!(
             Wrap!(
                 staticMap!(
-                    Instantiate!q{ StringOf!(a.storageClass) }.With,
+                    dio.util.meta.Instantiate!q{ StringOf!(a.storageClass) }.With,
                     FTI.Parameters)),
             Wrap!(
                 staticMap!(
-                    Instantiate!q{ StringOf!(a.Type) }.With,
+                    dio.util.meta.Instantiate!q{ StringOf!(a.Type) }.With,
                     FTI.Parameters)),
             Wrap!(
                 staticIota!(0, FTI.Parameters.length))
@@ -1933,7 +1933,7 @@ private:
     }
 
 public:
-    import util.metastrings_expand;
+    import dio.util.metastrings_expand;
     mixin(mixin(expand!q{
         ${StringOf!(FTI.storageClass)}
         ${StringOf!(FTI.attributes)}
@@ -1944,7 +1944,7 @@ public:
             alias Sequence!(${
                 Join!(Wrap!(
                     staticMap!(
-                        Instantiate!` "a" ~ to!string(a) `.With,
+                        dio.util.meta.Instantiate!` "a" ~ to!string(a) `.With,
                         staticIota!(0, FTI.Parameters.length))), ", ")
                 }) args;
             mixin(code);
@@ -2008,7 +2008,7 @@ private template DeclareTemplateImpl(string def)
     {
         mixin(def);
     }
-    alias Instantiate!Self Result;
+    alias dio.util.meta.Instantiate!Self Result;
 }
 template DeclareTemplate(string def)    // ditto
 {
@@ -2036,7 +2036,7 @@ template DelegateTypeOf(F) if (is(FunctionTypeOf!F == function))
 unittest
 {
     alias void function(int, float) @safe F;
-    static assert(is(DelegateTypeOf!F == void delegate(int, float) @safe));
+    static assert(is(DelegateTypeOf!F : void delegate(int, float) @safe));
 }
 
 

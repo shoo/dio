@@ -1,4 +1,4 @@
-﻿module util.metastrings_expand;
+﻿module dio.util.metastrings_expand;
 
 import std.algorithm : startsWith;
 import std.ascii : isalpha = isAlpha, isalnum = isAlphaNum;

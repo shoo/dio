@@ -1,15 +1,15 @@
 /**
 */
-module io.port;
+module dio.port;
 
-import io.core, io.file;
-import std.range, std.traits;
+import dio.core, dio.file;
+import std.range, std.traits, std.typecons;
 
 //import core.stdc.stdio : printf;
 
 version(Windows)
 {
-    import sys.windows;
+    import dio.sys.windows;
 }
 
 
@@ -24,9 +24,90 @@ File stdin;
 File stdout;    /// ditto
 File stderr;    /// ditto
 
-alias typeof({ return stdin .textPort(); }()) StdInTextPort;
-alias typeof({ return stdout.textPort(); }()) StdOutTextPort;
-alias typeof({ return stderr.textPort(); }()) StdErrTextPort;
+
+private struct StdIo
+{
+    File _io;
+    this(File host)
+    {
+        _io = host;
+    }
+    bool pull(ref ubyte[] buf)
+    {
+        // Reading console input always returns UTF-16
+        if (GetFileType(_io.handle) == FILE_TYPE_CHAR)
+        {
+            DWORD size = void;
+            if (ReadConsoleW(_io.handle, buf.ptr, buf.length/2, &size, null))
+            {
+                debug(File)
+                    std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
+                        cast(uint)_io.handle, buf.length, size, GetLastError());
+                debug(File)
+                    std.stdio.writefln("C buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size*2]);
+                buf = buf[size * 2 .. $];
+                return (size > 0);  // valid on only blocking read
+            }
+        }
+        else
+        {
+            return _io.pull(buf);
+        }
+        {
+            switch (GetLastError())
+            {
+                case ERROR_BROKEN_PIPE:
+                    return false;
+                default:
+                    break;
+            }
+
+            debug(File)
+                std.stdio.writefln("pull ng : hFile=%08X, size=%s, GetLastError()=%s",
+                    cast(uint)hFile, size, GetLastError());
+            throw new Exception("pull(ref buf[]) error");
+
+        //  // for overlapped I/O
+        //  eof = (GetLastError() == ERROR_HANDLE_EOF);
+        }
+    }
+    
+    bool push(ref const(ubyte)[] buf)
+    {
+        if (GetFileType(_io.handle) == FILE_TYPE_CHAR)
+        {
+            DWORD size = void;
+            if (WriteConsoleW(_io.handle, buf.ptr, buf.length/2, &size, null))
+            {
+                debug(File)
+                    std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
+                        cast(uint)_io.handle, buf.length, size, GetLastError());
+                debug(File)
+                    std.stdio.writefln("C buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size]);
+                buf = buf[size * 2 .. $];
+                return (size > 0);  // valid on only blocking read
+            }
+        }
+        else
+        {
+            return _io.push(buf);
+        }
+        {
+            throw new Exception("push error");  //?
+        }
+    }
+    bool opEquals(ref const StdIo rhs) const { return _io.opEquals(rhs._io); }
+    bool opEquals(HANDLE h) const { return _io.opEquals(h); }
+    bool flush() { return _io.flush(); }
+    HANDLE handle() @property { return _io.handle; }
+    ulong seek(long offset, SeekPos whence) { return _io.seek(offset, whence); }
+    bool seekable() @property { return _io.seekable; }
+    //mixin Proxy!_io;
+}
+
+alias typeof({ return StdIo(stdin).textPort(); }()) StdInTextPort;
+alias typeof({ return StdIo(stdout).textPort(); }()) StdOutTextPort;
+alias typeof({ return StdIo(stderr).textPort(); }()) StdErrTextPort;
 
 /**
 */
@@ -34,7 +115,7 @@ StdInTextPort din;
 StdOutTextPort dout;   /// ditto
 StdErrTextPort derr;   /// ditto
 
-static this()
+shared static this()
 {
     version(Posix)
     {
@@ -52,11 +133,16 @@ static this()
         stderr = File(GetStdHandle(STD_ERROR_HANDLE));
     }
 
-    din  = stdin .textPort();
-    dout = stdout.textPort();
-    derr = stderr.textPort();
+    din  = StdIo(stdin).textPort();
+    dout = StdIo(stdout).textPort();
+    derr = StdIo(stderr).textPort();
 }
 
+shared static ~this()
+{
+    dout.flush();
+    derr.flush();
+}
 
 /**
 Output $(D args) to $(D writer).
@@ -149,7 +235,7 @@ void writefln(T...)(T args)
 /**
 Input $(D data)s from $(D reader) with specified $(D format).
 */
-uint readf(Reader, Data...)(Reader reader, in char[] format, Data data) if (isInputRange!Reader)
+uint readf(Reader, Data...)(auto ref Reader reader, in char[] format, Data data) if (isInputRange!Reader)
 {
     import std.format;
     return formattedRead(reader, format, data);
@@ -185,12 +271,9 @@ if (isSomeChar!(DeviceElementType!Dev) ||
     else
     {
         alias typeof({ return Dev.init.coerced!char.buffered; }()) LowDev;
-        return TextPort!LowDev(device.coerced!char.buffered, /*false*/true);
+        return TextPort!LowDev(device.coerced!char.buffered, false);
     }
 }
-
-//debug = X;
-debug(X) private import dbg = std.stdio;
 
 /**
 Implementation of text port.
@@ -276,7 +359,6 @@ public:
         static if (isNarrowChar!B)
         {
         Lagain:
-            debug(X) dbg.writefln("available = [%(%02X %)], dlen = %d", device.available, dlen);
             B c = device.available[0];
             auto n = stride((&c)[0..1], 0);
             if (n == 1)
@@ -296,7 +378,6 @@ public:
                 }
                 front_ok = true;
                 front_val = c;
-                debug(X) dbg.writefln("-> front = %02X '%c' <n==1><dlen=%d>", c, c, dlen);
                 return c;
             }
 
@@ -314,7 +395,6 @@ public:
             device.consume(1);
         }
         front_ok = true;
-         debug(X) dbg.writefln("-> front = %02X '%c'", front_val, front_val);
         return front_val;
 
     err:
@@ -360,14 +440,12 @@ public:
     */
     void put()(dchar data)
     {
-//dbg.writefln("put1 data = %x", data);
         put((&data)[0 .. 1]);
     }
 
     /// ditto
     void put()(const(B)[] data)
     {
-//dbg.writefln("put2 data = %s", data);
         // direct output
         immutable last = data.length - 1;
     retry:
@@ -402,7 +480,6 @@ public:
     /// ditto
     void put()(const(dchar)[] data) if (isNarrowChar!B)
     {
-//dbg.writefln("put3 data = %s", data);
         // encode to narrow
         foreach (c; data)
         {
@@ -427,7 +504,6 @@ public:
     /// ditto
     void put(C)(const(C)[] data) if (isNarrowChar!C && !is(B == C))
     {
-//dbg.writefln("put4 data = %s", data);
         // transcode between narrows
         size_t i = 0;
         while (i < data.length)
@@ -778,8 +854,14 @@ version(Windows)
 
             // output to console
             writeln(dout, str);
+            
+            GetConsoleScreenBufferInfo(hStdOut, &csbinfo);
+            if (curpos == csbinfo.dwCursorPosition)
+            {
+                curpos.Y--;
+            }
 
-            wchar[orglen*2] buf;    // prited columns may longer than code-unit count.
+            wchar[orglen*2] buf = void;    // prited columns may longer than code-unit count.
             DWORD cnt;
             ReadConsoleOutputCharacterW(hStdOut, buf.ptr, buf.length, curpos, &cnt);
 

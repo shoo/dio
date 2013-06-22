@@ -1,10 +1,9 @@
-module io.file;
+module dio.file;
 
-import io.core;
-import std.utf;
+import dio.core;
 version(Windows)
 {
-    import sys.windows;
+    import dio.sys.windows;
 }
 else version(Posix)
 {
@@ -118,7 +117,7 @@ public:
                 break;
         }
 
-        attach(CreateFileW(std.utf.toUTFz!(const wchar*)(fname),
+        attach(CreateFileW(std.utf.toUTFz!(const(wchar)*)(fname),
                            access, share, null, createMode, 0, null));
       }
     }
@@ -165,14 +164,14 @@ public:
     /// ditto
     void detach()
     {
-        if (pRefCounter)
+        if (pRefCounter && *pRefCounter > 0)
         {
             if (--(*pRefCounter) == 0)
             {
                 //delete pRefCounter;   // trivial: delegate management to GC.
               version(Windows)
               {
-                CloseHandle(hFile);
+                CloseHandle(cast(HANDLE)hFile);
                 hFile = null;
               }
               version(Posix)
@@ -226,32 +225,15 @@ public:
       {
         DWORD size = void;
 
-        // Reading console input always returns UTF-16
-        if (GetFileType(hFile) == FILE_TYPE_CHAR)
+        if (ReadFile(hFile, buf.ptr, buf.length, &size, null))
         {
-            if (ReadConsoleW(hFile, buf.ptr, buf.length/2, &size, null))
-            {
-                debug(File)
-                    std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
-                        cast(uint)hFile, buf.length, size, GetLastError());
-                debug(File)
-                    std.stdio.writefln("C buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size*2]);
-                buf = buf[size * 2 .. $];
-                return (size > 0);  // valid on only blocking read
-            }
-        }
-        else
-        {
-            if (ReadFile(hFile, buf.ptr, buf.length, &size, null))
-            {
-                debug(File)
-                    std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
-                        cast(uint)hFile, buf.length, size, GetLastError());
-                debug(File)
-                    std.stdio.writefln("F buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size]);
-                buf = buf[size.. $];
-                return (size > 0);  // valid on only blocking read
-            }
+            debug(File)
+                std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
+                    cast(uint)hFile, buf.length, size, GetLastError());
+            debug(File)
+                std.stdio.writefln("F buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size]);
+            buf = buf[size.. $];
+            return (size > 0);  // valid on only blocking read
         }
 
         switch (GetLastError())
@@ -262,14 +244,14 @@ public:
                 break;
         }
 
-        debug(File)
-            std.stdio.writefln("pull ng : hFile=%08X, size=%s, GetLastError()=%s",
-                cast(uint)hFile, size, GetLastError());
-        throw new Exception("pull(ref buf[]) error");
+            debug(File)
+                std.stdio.writefln("pull ng : hFile=%08X, size=%s, GetLastError()=%s",
+                    cast(uint)hFile, size, GetLastError());
+            throw new Exception("pull(ref buf[]) error");
 
-    //  // for overlapped I/O
-    //  eof = (GetLastError() == ERROR_HANDLE_EOF);
-      }
+        //  // for overlapped I/O
+        //  eof = (GetLastError() == ERROR_HANDLE_EOF);
+        }
     }
 
     /**
@@ -301,26 +283,10 @@ public:
       version(Windows)
       {
         DWORD size = void;
-        if (GetFileType(hFile) == FILE_TYPE_CHAR)
+        if (WriteFile(hFile, buf.ptr, buf.length, &size, null))
         {
-            if (WriteConsoleW(hFile, buf.ptr, buf.length/2, &size, null))
-            {
-                debug(File)
-                    std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
-                        cast(uint)hFile, buf.length, size, GetLastError());
-                debug(File)
-                    std.stdio.writefln("C buf[0 .. %d] = [%(%02X %)]", size, buf[0 .. size]);
-                buf = buf[size * 2 .. $];
-                return (size > 0);  // valid on only blocking read
-            }
-        }
-        else
-        {
-            if (WriteFile(hFile, buf.ptr, buf.length, &size, null))
-            {
-                buf = buf[size .. $];
-                return true;    // (size == buf.length);
-            }
+            buf = buf[size .. $];
+            return true;    // (size == buf.length);
         }
 
         throw new Exception("push error");  //?
@@ -406,7 +372,7 @@ unittest
 
     assert(buf.length == 64);
     debug std.stdio.writefln("buf = [%(%02x %)]\n", buf);
-    assert(startsWith(buf, "module io.file;\n"));
+    assert(startsWith(buf, "module dio.file;\n"));
 }
 
 
@@ -441,7 +407,7 @@ struct ArraySource(E)
 
 unittest
 {
-    import io.port;
+    import dio.port;
 
     auto r = ArraySource!char("10\r\ntest\r\n").buffered.ranged;
     long num;
