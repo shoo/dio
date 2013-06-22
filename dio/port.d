@@ -13,7 +13,7 @@ version(Windows)
 }
 version(Posix)
 {
-    import core.sys.posix.unistd;
+    import dio.sys.posix;
 }
 
 private template isNarrowChar(T)
