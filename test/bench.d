@@ -24,6 +24,7 @@ auto benchReadCharsFromFile()
 {
     enum count = 4096;
     auto fname = genXorshiftFile(count);
+    scope(exit) std.file.remove(fname);
 
     return benchmark!(
         () @trusted
@@ -52,6 +53,7 @@ auto benchReadLinesFromFile()
 {
     enum count = 4096;
     auto fname = genXorshiftFile(count);
+    scope(exit) std.file.remove(fname);
 
     return benchmark!(
         () @trusted
@@ -87,6 +89,7 @@ auto benchWriteCharsToFile()
 {
     enum count = 4096;
     auto fname = "charout.txt";
+    scope(exit) std.file.remove(fname);
 
     return benchmark!(
         () @trusted
