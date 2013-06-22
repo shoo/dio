@@ -11,10 +11,10 @@ DFLAGS=-property -w -I$(SRCDIR) -g
 
 DDOCDIR=html/d
 DOCS=$(DDOCDIR)/dio.html \
-	$(DDOCDIR)/io_core.html \
-	$(DDOCDIR)/io_file.html \
-	$(DDOCDIR)/io_socket.html \
-	$(DDOCDIR)/io_port.html
+	$(DDOCDIR)/dio_core.html \
+	$(DDOCDIR)/dio_file.html \
+	$(DDOCDIR)/dio_socket.html \
+	$(DDOCDIR)/dio_port.html
 DDOC=dio.ddoc
 DDOCFLAGS=-D -c -o- $(DFLAGS)
 
@@ -69,17 +69,17 @@ test/release_bench.exe: test/bench.d
 
 html: $(DOCS) $(SRCS)
 
-$(DDOCDIR)/io_core.html: $(DDOC) io/core.d
-	dmd $(DDOCFLAGS) -Df$@ $(DDOC) io/core.d
+$(DDOCDIR)/dio_core.html: $(DDOC) dio/core.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio/core.d
 
-$(DDOCDIR)/io_file.html: $(DDOC) io/file.d
-	dmd $(DDOCFLAGS) -Df$@ $(DDOC) io/file.d
+$(DDOCDIR)/dio_file.html: $(DDOC) dio/file.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio/file.d
 
-$(DDOCDIR)/io_socket.html: $(DDOC) io/socket.d
-	dmd $(DDOCFLAGS) -Df$@ $(DDOC) io/socket.d
+$(DDOCDIR)/dio_socket.html: $(DDOC) dio/socket.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio/socket.d
 
-$(DDOCDIR)/io_port.html: $(DDOC) io/port.d
-	dmd $(DDOCFLAGS) -Df$@ $(DDOC) io/port.d
+$(DDOCDIR)/dio_port.html: $(DDOC) dio/port.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio/port.d
 
 $(DDOCDIR)/dio.html: $(DDOC) dio/package.d
 	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio/package.d
