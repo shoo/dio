@@ -3,7 +3,6 @@ SRCS=dio/package.d \
 	dio/file.d \
 	dio/socket.d \
 	dio/port.d \
-	dio/sys/windows.d \
 	dio/util/meta.d \
 	dio/util/metastrings_expand.d
 
