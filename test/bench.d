@@ -23,7 +23,7 @@ void main()
 auto benchReadCharsFromFile()
 {
     enum count = 4096;
-    auto fname = genXorthiftFile(count);
+    auto fname = genXorshiftFile(count);
 
     return benchmark!(
         () @trusted
@@ -51,7 +51,7 @@ auto benchReadCharsFromFile()
 auto benchReadLinesFromFile()
 {
     enum count = 4096;
-    auto fname = genXorthiftFile(count);
+    auto fname = genXorshiftFile(count);
 
     return benchmark!(
         () @trusted
@@ -67,7 +67,7 @@ auto benchReadLinesFromFile()
     )(20);  // cannot repeat 500
 }
 
-auto genXorthiftFile(size_t linecount)
+auto genXorshiftFile(size_t linecount)
 {
     import std.path, std.conv;
     string fname = "xorshift.txt";
