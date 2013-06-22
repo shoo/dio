@@ -11,7 +11,10 @@ version(Windows)
 {
     import dio.sys.windows;
 }
-
+version(Posix)
+{
+    import core.sys.posix.unistd;
+}
 
 private template isNarrowChar(T)
 {
@@ -34,6 +37,12 @@ private struct StdIo
     }
     bool pull(ref ubyte[] buf)
     {
+      version(Posix)
+      {
+        return _io.pull(buf);
+      }
+      version(Windows)
+      {
         // Reading console input always returns UTF-16
         if (GetFileType(_io.handle) == FILE_TYPE_CHAR)
         {
@@ -70,10 +79,17 @@ private struct StdIo
         //  // for overlapped I/O
         //  eof = (GetLastError() == ERROR_HANDLE_EOF);
         }
+      }
     }
     
     bool push(ref const(ubyte)[] buf)
     {
+      version(Posix)
+      {
+        return _io.push(buf);
+      }
+      version(Windows)
+      {
         if (GetFileType(_io.handle) == FILE_TYPE_CHAR)
         {
             DWORD size = void;
@@ -95,6 +111,7 @@ private struct StdIo
         {
             throw new Exception("push error");  //?
         }
+      }
     }
     bool opEquals(ref const StdIo rhs) const { return _io.opEquals(rhs._io); }
     bool opEquals(HANDLE h) const { return _io.opEquals(h); }
@@ -122,9 +139,9 @@ shared static this()
         import core.sys.posix.fcntl;
         fcntl(0, F_SETFL, O_NONBLOCK);
         //fcntl(1, F_SETFL, O_NONBLOCK/* | O_DIRECT*/);
-        stdin  = File(0);
-        stdout = File(1);
-        stderr = File(2);
+        stdin  = File(STDIN_FILENO);
+        stdout = File(STDOUT_FILENO);
+        stderr = File(STDERR_FILENO);
     }
     version(Windows)
     {

@@ -70,9 +70,8 @@ public:
                 break;
             default:
                 assert(0);
-                break;
         }
-        attach(core.sys.posix.fcntl.open(toUTFz!(const char*)(fname),
+        attach(core.sys.posix.fcntl.open(std.utf.toUTFz!(const char*)(fname),
                                          flags | O_NONBLOCK, share));
       }
       version(Windows)
@@ -204,7 +203,7 @@ public:
       version(Posix)
       {
     Lagain:
-        int n = core.sys.posix.unistd.read(hFile, buf.ptr, buf.length);
+        ssize_t n = core.sys.posix.unistd.read(hFile, buf.ptr, buf.length);
         if (n >= 0)
         {
             buf = buf[n .. $];
@@ -261,7 +260,7 @@ public:
       version(Posix)
       {
     Lagain:
-        int n = core.sys.posix.unistd.write(hFile, buf.ptr, buf.length);
+        ssize_t n = core.sys.posix.unistd.write(hFile, buf.ptr, buf.length);
         if (n >= 0)
         {
             buf = buf[n .. $];
