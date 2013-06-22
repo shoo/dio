@@ -1,22 +1,25 @@
-SRCDIR=src
-SRCS=$(SRCDIR)/io/core.d \
-	$(SRCDIR)/io/file.d \
-	$(SRCDIR)/io/socket.d \
-	$(SRCDIR)/io/port.d
+SRCS=dio/package.d \
+	dio/core.d \
+	dio/file.d \
+	dio/socket.d \
+	dio/port.d \
+	dio/sys/windows.d \
+	dio/util/meta.d \
+	dio/util/metastrings_expand.d
 
 DFLAGS=-property -w -I$(SRCDIR) -g
 
 DDOCDIR=html/d
-DOCS=\
+DOCS=$(DDOCDIR)/dio.html \
 	$(DDOCDIR)/io_core.html \
 	$(DDOCDIR)/io_file.html \
 	$(DDOCDIR)/io_socket.html \
 	$(DDOCDIR)/io_port.html
-DDOC=io.ddoc
-DDOCFLAGS=-D -Dd$(DDOCDIR) -c -o- $(DFLAGS)
+DDOC=dio.ddoc
+DDOCFLAGS=-D -c -o- $(DFLAGS)
 
-IOLIB=lib/libio.a
-DEBLIB=lib/libio_debug
+IOLIB=lib/libdio.a
+DEBLIB=lib/libdio_debug.a
 
 
 # lib
@@ -24,7 +27,7 @@ DEBLIB=lib/libio_debug
 all: $(IOLIB)
 $(IOLIB): $(SRCS)
 	@[ -d lib ] || mkdir lib
-	dmd -lib -of$(IOLIB) $(SRCS)
+	dmd -lib $(DFLAGS) -of$(IOLIB) $(SRCS)
 
 #deblib: $(DEBLIB)
 #$(DEBLIB): $(SRCS)
@@ -43,8 +46,8 @@ runtest: $(IOLIB) test/unittest test/pipeinput
 	test/unittest
 	test/pipeinput.sh
 
-test/unittest: emptymain.d $(SRCS)
-	dmd $(DFLAGS) -of$@ -unittest emptymain.d $(SRCS)
+test/unittest: $(SRCS)
+	dmd $(DFLAGS) -of$@ -unittest -main $(SRCS)
 test/pipeinput: test/pipeinput.d test/pipeinput.dat test/pipeinput.sh $(IOLIB)
 	dmd $(DFLAGS) -of$@ test/pipeinput.d $(IOLIB)
 
@@ -64,16 +67,19 @@ test/release_bench.exe: test/bench.d
 
 # ddoc
 
-html: makefile $(DOCS) $(SRCS)
+html: $(DOCS) $(SRCS)
 
 $(DDOCDIR)/io_core.html: $(DDOC) io/core.d
-	dmd $(DDOCFLAGS) -Dfio_core.html $(DDOC) io/core.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) io/core.d
 
 $(DDOCDIR)/io_file.html: $(DDOC) io/file.d
-	dmd $(DDOCFLAGS) -Dfio_file.html $(DDOC) io/file.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) io/file.d
 
 $(DDOCDIR)/io_socket.html: $(DDOC) io/socket.d
-	dmd $(DDOCFLAGS) -Dfio_socket.html $(DDOC) io/socket.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) io/socket.d
 
 $(DDOCDIR)/io_port.html: $(DDOC) io/port.d
-	dmd $(DDOCFLAGS) -Dfio_port.html $(DDOC) io/port.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) io/port.d
+
+$(DDOCDIR)/dio.html: $(DDOC) dio/package.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio/package.d
