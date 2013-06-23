@@ -1,5 +1,5 @@
 import dio.port, dio.file;
-import std.algorithm, std.range, std.random, std.datetime;
+import std.algorithm, std.range, std.random, std.datetime, std.file;
 
 void main()
 {
@@ -24,7 +24,7 @@ auto benchReadCharsFromFile()
 {
     enum count = 4096;
     auto fname = genXorshiftFile(count);
-    scope(exit) std.file.remove(fname);
+    scope(exit) remove(fname);
 
     return benchmark!(
         () @trusted
@@ -53,7 +53,7 @@ auto benchReadLinesFromFile()
 {
     enum count = 4096;
     auto fname = genXorshiftFile(count);
-    scope(exit) std.file.remove(fname);
+    scope(exit) remove(fname);
 
     return benchmark!(
         () @trusted
@@ -89,7 +89,7 @@ auto benchWriteCharsToFile()
 {
     enum count = 4096;
     auto fname = "charout.txt";
-    scope(exit) std.file.remove(fname);
+    scope(exit) remove(fname);
 
     return benchmark!(
         () @trusted
