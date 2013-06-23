@@ -1,5 +1,5 @@
-import io.port, io.file;
-import std.algorithm, std.range, std.random, std.datetime;
+import dio.port, dio.file;
+import std.algorithm, std.range, std.random, std.datetime, std.file;
 
 void main()
 {
@@ -23,12 +23,13 @@ void main()
 auto benchReadCharsFromFile()
 {
     enum count = 4096;
-    auto fname = genXorthiftFile(count);
+    auto fname = genXorshiftFile(count);
+    scope(exit) remove(fname);
 
     return benchmark!(
         () @trusted
         {
-            import io.port, io.file;
+            import dio.port, dio.file;
             auto f = textPort(File(fname));
             string s;
             foreach (i; 0 .. count)
@@ -51,7 +52,8 @@ auto benchReadCharsFromFile()
 auto benchReadLinesFromFile()
 {
     enum count = 4096;
-    auto fname = genXorthiftFile(count);
+    auto fname = genXorshiftFile(count);
+    scope(exit) remove(fname);
 
     return benchmark!(
         () @trusted
@@ -67,7 +69,7 @@ auto benchReadLinesFromFile()
     )(20);  // cannot repeat 500
 }
 
-auto genXorthiftFile(size_t linecount)
+auto genXorshiftFile(size_t linecount)
 {
     import std.path, std.conv;
     string fname = "xorshift.txt";
@@ -87,6 +89,7 @@ auto benchWriteCharsToFile()
 {
     enum count = 4096;
     auto fname = "charout.txt";
+    scope(exit) remove(fname);
 
     return benchmark!(
         () @trusted
