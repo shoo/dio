@@ -12,6 +12,10 @@ version(Windows)
     import dio.sys.windows;
 }
 
+debug
+{
+    static import std.stdio;
+}
 
 private template isNarrowChar(T)
 {

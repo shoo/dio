@@ -1,6 +1,7 @@
 module dio.file;
 
 import dio.core;
+import std.utf;
 version(Windows)
 {
     import dio.sys.windows;
@@ -8,7 +9,7 @@ version(Windows)
 
 debug
 {
-    import std.stdio : writeln, writefln;
+    static import std.stdio;
 }
 
 /**
@@ -65,7 +66,7 @@ public:
                 break;
         }
 
-        attach(CreateFileW(std.utf.toUTFz!(const(wchar)*)(fname),
+        attach(CreateFileW(toUTFz!(const(wchar)*)(fname),
                            access, share, null, createMode, 0, null));
     }
     package this(HANDLE h)
@@ -135,7 +136,6 @@ public:
     */
     bool pull(ref ubyte[] buf)
     {
-        static import std.stdio;
         debug(File)
             std.stdio.writefln("ReadFile : buf.ptr=%08X, len=%s", cast(uint)buf.ptr, buf.length);
 
