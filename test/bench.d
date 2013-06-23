@@ -39,7 +39,8 @@ auto benchReadCharsFromFile()
         },
         () @trusted
         {
-            auto f = std.stdio.File(fname);
+            import std.stdio;
+            auto f = File(fname);
             string s;
             foreach (i; 0 .. count)
             {
@@ -71,11 +72,11 @@ auto benchReadLinesFromFile()
 
 auto genXorshiftFile(size_t linecount)
 {
-    import std.path, std.conv;
+    import std.path, std.conv, std.stdio;
     string fname = "xorshift.txt";
 
     auto rng = Xorshift(1);
-    auto f = std.stdio.File(fname, "w");
+    auto f = File(fname, "w");
     foreach (i; 0 .. linecount)
     {
         f.writeln(rng.front);
