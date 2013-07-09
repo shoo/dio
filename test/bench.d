@@ -64,7 +64,8 @@ auto benchReadLinesFromFile()
         },
         () @trusted
         {
-            foreach (ln; std.stdio.File(fname).byLine())
+            import std.stdio;
+            foreach (ln; File(fname).byLine())
             {}
         }
     )(20);  // cannot repeat 500
