@@ -4,7 +4,7 @@ void main()
 {
     long num;
     write("num>"), dout.flush(), readf("%s\n", &num);
-    writefln("num = %s\n", num);
+    writefln("num = %s", num);
     assert(num == 10);
 
     string str;

@@ -24,7 +24,7 @@ DEBLIB=lib\dio_debug.lib
 
 # lib
 
-lib: $(IOLIB)
+all: $(IOLIB)
 $(IOLIB): $(SRCS)
 	mkdir lib
 	dmd -lib $(DFLAGS) -of$(IOLIB) $(SRCS)
@@ -43,21 +43,21 @@ clean:
 
 # test
 
-runtest: lib test\unittest.exe test\pipeinput.exe
+runtest: $(IOLIB) test\unittest.exe test\pipeinput.exe
 	test\unittest.exe
 	test\pipeinput.bat
 
 test\unittest.exe: $(SRCS)
 	dmd $(DFLAGS) -of$@ -unittest -main $(SRCS)
-test\pipeinput.exe: test\pipeinput.d test\pipeinput.dat test\pipeinput.bat lib
+test\pipeinput.exe: test\pipeinput.d test\pipeinput.dat test\pipeinput.bat $(IOLIB)
 	dmd $(DFLAGS) -of$@ test\pipeinput.d $(IOLIB)
 
 
 # benchmark
 
-runbench: lib test\default_bench.exe
+runbench: $(IOLIB) test\default_bench.exe
 	test\default_bench.exe
-runbench_opt: lib test\release_bench.exe
+runbench_opt: $(IOLIB) test\release_bench.exe
 	test\release_bench.exe
 
 test\default_bench.exe: test\bench.d

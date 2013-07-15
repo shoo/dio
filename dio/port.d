@@ -11,10 +11,9 @@ version(Windows)
 {
     import dio.sys.windows;
 }
-
-debug
+version(Posix)
 {
-    static import std.stdio;
+    import dio.sys.posix;
 }
 
 private template isNarrowChar(T)
@@ -38,6 +37,12 @@ private struct StdIo
     }
     bool pull(ref ubyte[] buf)
     {
+      version(Posix)
+      {
+        return _io.pull(buf);
+      }
+      version(Windows)
+      {
         // Reading console input always returns UTF-16
         if (GetFileType(_io.handle) == FILE_TYPE_CHAR)
         {
@@ -74,10 +79,17 @@ private struct StdIo
         //  // for overlapped I/O
         //  eof = (GetLastError() == ERROR_HANDLE_EOF);
         }
+      }
     }
     
     bool push(ref const(ubyte)[] buf)
     {
+      version(Posix)
+      {
+        return _io.push(buf);
+      }
+      version(Windows)
+      {
         if (GetFileType(_io.handle) == FILE_TYPE_CHAR)
         {
             DWORD size = void;
@@ -99,6 +111,7 @@ private struct StdIo
         {
             throw new Exception("push error");  //?
         }
+      }
     }
     bool opEquals(ref const StdIo rhs) const { return _io.opEquals(rhs._io); }
     bool opEquals(HANDLE h) const { return _io.opEquals(h); }
@@ -121,6 +134,15 @@ StdErrTextPort derr;   /// ditto
 
 shared static this()
 {
+    version(Posix)
+    {
+        import core.sys.posix.fcntl;
+        fcntl(0, F_SETFL, O_NONBLOCK);
+        //fcntl(1, F_SETFL, O_NONBLOCK/* | O_DIRECT*/);
+        stdin  = File(STDIN_FILENO);
+        stdout = File(STDOUT_FILENO);
+        stderr = File(STDERR_FILENO);
+    }
     version(Windows)
     {
         stdin  = File(GetStdHandle(STD_INPUT_HANDLE));
@@ -283,17 +305,39 @@ private:
     static assert(isBufferedSource!Dev || isBufferedSink!Dev);
     static assert(isSomeChar!B);
 
+    struct Impl {
     Dev device;
     bool lineflush;
     bool eof;
     dchar front_val; bool front_ok;
     size_t dlen = 0;
+    size_t* pRefCount;
+    }
+    Impl* impl;
+    @property ref get() inout { assert(impl); return *impl; }
+    alias get this;
 
 public:
     this(Dev dev, bool lineOut)
     {
+        impl = new Impl;
+        pRefCount = new size_t;
+        *pRefCount = 1;
+
         device = dev;
         lineflush = lineOut;
+    }
+    this(this) {
+        if (impl)
+            ++(*pRefCount);
+    }
+    ~this() {
+        if (impl)
+            if (*pRefCount > 0 && --(*pRefCount) == 0) {
+                static if (isSink!Dev)
+                    flush();
+                clear(*impl);
+            }
     }
 
   static if (isSource!Dev)
@@ -303,9 +347,15 @@ public:
     */
     @property bool empty()
     {
+      version(none) {  // blocking here is bad for console input, why?
         while (device.available.length == 0 && !eof)
             eof = !device.fetch();
         assert(eof || device.available.length > 0);
+      } else {
+        if (device.available.length == 0 && !eof)
+            eof = !device.fetch();
+        assert(eof || device.available.length >= 0);
+      }
         return eof;
     }
 
@@ -314,6 +364,14 @@ public:
     {
         if (front_ok)
             return front_val;
+
+      version(all) {    // blocking here instead of empty is good for console input, why?
+        while (device.available.length == 0 && !eof)
+            eof = !device.fetch();
+        if (eof)
+            goto err;
+        assert(device.available.length > 0);
+      }
 
         static if (isNarrowChar!B)
         {
