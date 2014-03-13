@@ -312,6 +312,9 @@ public:
     /// ditto
     @property dchar front()
     {
+        size_t i;
+        B[B.sizeof == 1 ? 6 : 2] ubuf;
+        B[] buf;
         if (front_ok)
             return front_val;
 
@@ -340,12 +343,11 @@ public:
                 return c;
             }
 
-            B[B.sizeof == 1 ? 6 : 2] ubuf;
-            B[] buf = ubuf[0 .. n];
+            buf = ubuf[0 .. n];
             while (buf.length > 0 && device.pull(buf)) {}
             if (buf.length)
                 goto err;
-            size_t i = 0;
+            i = 0;
             front_val = decode(ubuf[0 .. n], i);
         }
         else

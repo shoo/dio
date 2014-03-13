@@ -109,7 +109,7 @@ unittest
     auto wr = sock.sinked /*.buffered*/.coerced!char.ranged;
     auto rd = sock.sourced  .buffered  .coerced!char.ranged;
 
-    wr.put("GET / HTTP/1.0\r\n\r\n");
+    wr.put("GET / HTTP/1.1\r\n\r\n");
     auto recvbuf = rd.array();
   });
 }

@@ -48,9 +48,9 @@ runtest: lib test\unittest.exe test\pipeinput.exe
 	test\pipeinput.bat
 
 test\unittest.exe: $(SRCS)
-	dmd $(DFLAGS) -of$@ -unittest -main $(SRCS)
+	dmd $(DFLAGS) -of$@ -unittest -debug -g -main $(SRCS)
 test\pipeinput.exe: test\pipeinput.d test\pipeinput.dat test\pipeinput.bat lib
-	dmd $(DFLAGS) -of$@ test\pipeinput.d $(IOLIB)
+	dmd $(DFLAGS) -of$@ -debug -g test\pipeinput.d $(IOLIB)
 
 
 # benchmark
