@@ -7,7 +7,7 @@ SRCS=dio\package.d \
 	dio\util\meta.d \
 	dio\util\metastrings_expand.d
 
-DFLAGS=-property -w -I$(SRCDIR)
+DFLAGS=-we -de -I$(SRCDIR)
 
 DDOCDIR=html\d
 DOCS=$(DDOCDIR)\dio.html \
