@@ -720,7 +720,7 @@ version(Windows)
             {
                 if (--(*pRefCounter) == 0)
                 {
-                    con ? clear(store.cport) : clear(store.fport);
+                    con ? destroy(store.cport) : destroy(store.fport);
                     free(payload);
                 }
             }
@@ -872,7 +872,7 @@ version(Windows)
         }
         ~this()
         {
-            con ? clear(clines) : clear(flines);
+            con ? destroy(clines) : destroy(flines);
         }
 
         @property bool empty()
