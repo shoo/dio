@@ -674,18 +674,14 @@ version(Windows)
     {
     private:
         import std.conv : emplace;
+        import std.algorithm: max;
 
         alias typeof({ return Dev.init.coerced!wchar.buffered; }()) ConDev;
         alias typeof({ return Dev.init.coerced!char.buffered; }()) LowDev;
 
         bool con;
-        union X
-        {
-            TextPort!ConDev cport;
-            TextPort!LowDev fport;
-        }
-        ubyte[X.sizeof]* payload;
-        @property ref X store() { return *cast(X*)payload.ptr; }
+        ubyte[max(TextPort!ConDev.sizeof, TextPort!LowDev.sizeof)]* payload;
+        @property ref TextPort!Dev store(Dev)() { return *cast(TextPort!Dev*)payload.ptr; }
         size_t* pRefCounter;
         import core.stdc.stdlib;
 
@@ -697,12 +693,12 @@ version(Windows)
             if (GetFileType(dev.handle) == FILE_TYPE_CHAR)
             {
                 con = true;
-                emplace(&store.cport, dev.coerced!wchar.buffered, true);
+                emplace(&store!ConDev(), dev.coerced!wchar.buffered, true);
             }
             else
             {
                 con = false;
-                emplace(&store.fport, dev.coerced!char.buffered, false);
+                emplace(&store!LowDev(), dev.coerced!char.buffered, false);
             }
             pRefCounter = new size_t;
             *pRefCounter = 1;
@@ -711,8 +707,8 @@ version(Windows)
         {
             if (pRefCounter)
                 ++(*pRefCounter);
-            //con ? typeid(store().cport).postblit(&store.cport)
-            //    : typeid(store().fport).postblit(&store.fport);
+            //con ? typeid(store!ConDev).postblit(&store!ConDev)
+            //    : typeid(store!LowDev).postblit(&store!LowDev);
         }
         ~this()
         {
@@ -720,7 +716,7 @@ version(Windows)
             {
                 if (--(*pRefCounter) == 0)
                 {
-                    con ? destroy(store.cport) : destroy(store.fport);
+                    con ? destroy(store!ConDev) : destroy(store!LowDev);
                     free(payload);
                 }
             }
@@ -730,19 +726,19 @@ version(Windows)
       {
         @property bool empty()
         {
-            return con ? store.cport.empty : store.fport.empty;
+            return con ? store!ConDev.empty : store!LowDev.empty;
         }
         @property dchar front()
         {
-            return con ? store.cport.front : store.fport.front;
+            return con ? store!ConDev.front : store!LowDev.front;
         }
         void popFront()
         {
-            return con ? store.cport.popFront() : store.fport.popFront();
+            return con ? store!ConDev.popFront() : store!LowDev.popFront();
         }
         int opApply(scope int delegate(dchar) dg)
         {
-            return con ? store.cport.opApply(dg) : store.fport.opApply(dg);
+            return con ? store!ConDev.opApply(dg) : store!LowDev.opApply(dg);
         }
 
         @property auto lines(String = const(char)[])()
@@ -753,12 +749,12 @@ version(Windows)
 
       static if (isSink!Dev)
       {
-        void put(dchar data) { return con ? store.cport.put(data) : store.fport.put(data); }
-        void put(const( char)[] data) { return con ? store.cport.put(data) : store.fport.put(data); }
-        void put(const(wchar)[] data) { return con ? store.cport.put(data) : store.fport.put(data); }
-        void put(const(dchar)[] data) { return con ? store.cport.put(data) : store.fport.put(data); }
+        void put(dchar data) { return con ? store!ConDev.put(data) : store!LowDev.put(data); }
+        void put(const( char)[] data) { return con ? store!ConDev.put(data) : store!LowDev.put(data); }
+        void put(const(wchar)[] data) { return con ? store!ConDev.put(data) : store!LowDev.put(data); }
+        void put(const(dchar)[] data) { return con ? store!ConDev.put(data) : store!LowDev.put(data); }
 
-        void flush() { con ? store.cport.flush() : store.fport.flush(); }
+        void flush() { con ? store!ConDev.flush() : store!LowDev.flush(); }
       }
     }
 
@@ -841,8 +837,8 @@ version(Windows)
     private:
         import std.conv : emplace;
 
-        alias typeof({ return Dev.init.store.cport.lines!String; }()) ConDev;
-        alias typeof({ return Dev.init.store.fport.lines!String; }()) LowDev;
+        alias typeof({ return Dev.init.store!ConDev.lines!String; }()) ConDev;
+        alias typeof({ return Dev.init.store!LowDev.lines!String; }()) LowDev;
 
         bool con;
         union
