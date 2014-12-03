@@ -66,8 +66,11 @@ public:
                 break;
         }
 
-        attach(CreateFileW(toUTFz!(const(wchar)*)(fname),
-                           access, share, null, createMode, 0, null));
+        auto h = CreateFileW(toUTFz!(const(wchar)*)(fname),
+                             access, share, null, createMode, 0, null);
+        import std.exception;
+        enforce(h !is INVALID_HANDLE_VALUE, sysErrorString(GetLastError()));
+        attach(h);
     }
     package this(HANDLE h)
     {
