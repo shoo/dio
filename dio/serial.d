@@ -145,8 +145,8 @@ struct Serial
 		COMMTIMEOUTS timeout;
 		with (timeout)
 		{
-			ReadIntervalTimeout         = 1;
-			ReadTotalTimeoutMultiplier  = 1;
+			ReadIntervalTimeout         = DWORD.max;
+			ReadTotalTimeoutMultiplier  = 0;
 			ReadTotalTimeoutConstant    = 0;
 			WriteTotalTimeoutMultiplier = 0;
 			WriteTotalTimeoutConstant   = 0;

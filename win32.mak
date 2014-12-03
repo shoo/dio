@@ -1,6 +1,7 @@
 SRCS=dio\package.d \
 	dio\core.d \
 	dio\file.d \
+	dio\serial.d \
 	dio\socket.d \
 	dio\port.d \
 	dio\sys\windows.d \
@@ -13,6 +14,7 @@ DDOCDIR=html\d
 DOCS=$(DDOCDIR)\dio.html \
 	$(DDOCDIR)\dio_core.html \
 	$(DDOCDIR)\dio_file.html \
+	$(DDOCDIR)\dio_serial.html \
 	$(DDOCDIR)\dio_socket.html \
 	$(DDOCDIR)\dio_port.html
 DDOC=dio.ddoc
@@ -75,6 +77,9 @@ $(DDOCDIR)\dio_core.html: $(DDOC) dio\core.d
 
 $(DDOCDIR)\dio_file.html: $(DDOC) dio\file.d
 	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio\file.d
+
+$(DDOCDIR)\dio_socket.html: $(DDOC) dio\serial.d
+	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio\serial.d
 
 $(DDOCDIR)\dio_socket.html: $(DDOC) dio\socket.d
 	dmd $(DDOCFLAGS) -Df$@ $(DDOC) dio\socket.d
