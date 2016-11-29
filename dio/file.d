@@ -76,12 +76,12 @@ public:
     {
         attach(h);
     }
-    this(this)
+    this(this) nothrow
     {
         if (pRefCounter)
             ++(*pRefCounter);
     }
-    ~this()
+    ~this() nothrow
     {
         detach();
     }
@@ -113,17 +113,22 @@ public:
         *pRefCounter = 1;
     }
     /// ditto
-    void detach()
+    void detach() nothrow
     {
-        if (pRefCounter && *pRefCounter > 0)
+        try
         {
-            if (--(*pRefCounter) == 0)
+            if (pRefCounter && *pRefCounter > 0)
             {
-                //delete pRefCounter;   // trivial: delegate management to GC.
-                CloseHandle(cast(HANDLE)hFile);
+                if (--(*pRefCounter) == 0)
+                {
+                    //delete pRefCounter;   // trivial: delegate management to GC.
+                    CloseHandle(cast(HANDLE)hFile);
+                }
+                //pRefCounter = null;       // trivial: do not need
             }
-            //pRefCounter = null;       // trivial: do not need
         }
+        catch (Throwable e)
+            return;
     }
 
     //typeof(this) dup() { return this; }
@@ -144,7 +149,7 @@ public:
 
         DWORD size = void;
 
-        if (ReadFile(hFile, buf.ptr, buf.length, &size, null))
+        if (ReadFile(hFile, buf.ptr, cast(DWORD)buf.length, &size, null))
         {
             debug(File)
                 std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
@@ -179,7 +184,7 @@ public:
     bool push(ref const(ubyte)[] buf)
     {
         DWORD size = void;
-        if (WriteFile(hFile, buf.ptr, buf.length, &size, null))
+        if (WriteFile(hFile, buf.ptr, cast(DWORD)buf.length, &size, null))
         {
             buf = buf[size .. $];
             return true;    // (size == buf.length);

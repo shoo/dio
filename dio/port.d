@@ -42,7 +42,7 @@ private struct StdIo
         if (GetFileType(_io.handle) == FILE_TYPE_CHAR)
         {
             DWORD size = void;
-            if (ReadConsoleW(_io.handle, buf.ptr, buf.length/2, &size, null))
+            if (ReadConsoleW(_io.handle, buf.ptr, cast(DWORD)buf.length/2, &size, null))
             {
                 debug(File)
                     std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
@@ -81,7 +81,7 @@ private struct StdIo
         if (GetFileType(_io.handle) == FILE_TYPE_CHAR)
         {
             DWORD size = void;
-            if (WriteConsoleW(_io.handle, buf.ptr, buf.length/2, &size, null))
+            if (WriteConsoleW(_io.handle, buf.ptr, cast(DWORD)buf.length/2, &size, null))
             {
                 debug(File)
                     std.stdio.writefln("pull ok : hFile=%08X, buf.length=%s, size=%s, GetLastError()=%s",
@@ -326,8 +326,9 @@ public:
             if (n == 1)
             {
                 device.consume(1);
-                if (dlen && (dlen = 0, c == '\n'))
+                if (dlen && c == '\n')
                 {
+                    dlen = 0;
                     while (device.available.length == 0 && device.fetch()) {}
                     if (device.available.length == 0)
                         goto err;
@@ -337,6 +338,10 @@ public:
                 {
                     dlen = 1;
                     c = '\n';
+                }
+                else
+                {
+                    dlen = 0;
                 }
                 front_ok = true;
                 front_val = c;
